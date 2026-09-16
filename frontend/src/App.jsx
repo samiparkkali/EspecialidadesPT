@@ -111,6 +111,12 @@ function App() {
       )}
 
       {activeTab === 'this-year' && <ThisYear vagas={vagas} />}
+
+      <footer className="site-footer">
+        <a href="https://parkkali-website.vercel.app/" target="_blank" rel="noopener noreferrer">
+          Sami Parkkali
+        </a>
+      </footer>
     </>
   );
 }

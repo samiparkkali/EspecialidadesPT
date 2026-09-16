@@ -53,6 +53,9 @@ CANONICAL_MAP: dict[str, list[str]] = {
     "Psiquiatria da Infância e da Adolescência": [
         "Psiquiatria da Infância e da Adolescência",
         "Psiquiatria Da Infância E Da Adolescência",
+        "Psiquiatria Infância E Adolescência",
+        "Psiquiatria da Infância e Adolescência",
+        "Psiquiatria Infância e da Adolescência",
     ],
     "Cirurgia Plástica, Reconstrutiva e Estética": [
         "Cirurgia Plástica Reconstrutiva Estética",

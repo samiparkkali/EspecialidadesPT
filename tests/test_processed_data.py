@@ -43,10 +43,12 @@ def test_vagas_has_no_known_bad_specialties():
     assert not bad, f"known-bad specialty names leaked back in: {bad}"
 
 
-def test_vagas_seats_are_positive_integers():
+def test_vagas_seats_are_non_negative_integers():
+    """0 is a legitimate value (a region/institution offered no seats for
+    that specialty that year); negative would indicate a parsing bug."""
     rows = _read_csv(VAGAS_CSV)
     for r in rows:
-        assert int(r["seats"]) > 0, r
+        assert int(r["seats"]) >= 0, r
 
 
 def test_vagas_years_in_range():
@@ -97,11 +99,12 @@ def test_colocados_has_specialty():
         assert r["specialty"], r
 
 
-def test_colocados_institution_present_for_native_years_only():
-    """OCR-derived years (extract_colocados_ocr.py) only recover specialty
-    + ordering number, institution is intentionally blank -- see its
-    docstring. Native-text years should always have one."""
+def test_colocados_institution_blank_only_for_2024():
+    """2024's OCR text scrambles institution names across records (see
+    extract_colocados_ocr_full.py's docstring), so institution is
+    intentionally left blank for it. Every other year (native-text, or
+    2025's OCR which preserves row order) should always have one."""
     rows = _read_csv(COLOCADOS_CSV)
     for r in rows:
-        if int(r["year"]) not in (2024, 2025):
+        if int(r["year"]) != 2024:
             assert r["institution"], r

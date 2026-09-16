@@ -124,3 +124,18 @@ th {
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
+
+.site-footer {
+  text-align: center;
+  padding: 1.5rem 0 0.5rem;
+  font-size: 0.8rem;
+}
+
+.site-footer a {
+  color: var(--color-secondary);
+  text-decoration: none;
+}
+
+.site-footer a:hover {
+  text-decoration: underline;
+}

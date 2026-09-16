@@ -23,8 +23,9 @@ import fitz
 
 from extract_colocados import parse_colocados_pdf
 from extract_colocados_ocr import parse_ocr_colocados
+from extract_colocados_ocr_full import parse_ocr_colocados_full
 from extract_vagas import parse_vagas_pdf
-from extract_vagas_totals import parse_specialty_totals
+from extract_vagas_labeled import parse_vagas_labeled
 from institution_mapping import canonicalize
 from region_mapping import region_key
 from specialty_mapping import canonicalize_specialty
@@ -116,24 +117,25 @@ def build_vagas(known_specialties: set[str] | None = None) -> list[dict]:
         else:
             # Either parse_vagas_pdf raised, or it ran but every row got
             # rejected (e.g. wrong indent calibration for that year's
-            # layout -- see extract_vagas.py). Either way, fall back to
-            # specialty-level totals only (extract_vagas_totals.py), which
-            # uses explicit "Total da Especialidade" labels instead of
-            # position-based row matching.
-            totals = parse_specialty_totals(str(path), year, known_specialties or set())
-            for t in totals:
+            # layout -- see extract_vagas.py). Fall back to
+            # extract_vagas_labeled.py, which uses explicit "Subtotal"/
+            # "Total da Especialidade" labels as anchors instead of
+            # position-based row matching -- full institution/region
+            # detail, not just a specialty total.
+            labeled = parse_vagas_labeled(str(path), year, known_specialties or set())
+            for r in labeled:
                 rows.append(
                     {
-                        "year": t.year,
-                        "specialty": t.specialty,
-                        "region": "",
-                        "region_key": "",
-                        "institution": "",
-                        "seats": t.seats,
-                        "canonical_institution": "",
+                        "year": r.year,
+                        "specialty": r.specialty,
+                        "region": r.region or "",
+                        "region_key": region_key(r.region) or "",
+                        "institution": r.institution or "",
+                        "seats": r.seats,
+                        "canonical_institution": canonicalize(r.institution) if r.institution else "",
                     }
                 )
-            print(f"{path.name}: {len(totals)} specialty-level totals (no institution breakdown)")
+            print(f"{path.name}: {len(labeled)} rows (labeled-format parser)")
 
     if rejected:
         print(f"rejected {len(rejected)} non-specialty labels (MGF nesting artifacts): "
@@ -168,10 +170,17 @@ def build_colocados() -> list[dict]:
             )
         print(f"{path.name}: {len(parsed)} rows")
 
-    # OCR'd files: only specialty + ordering number are recoverable (see
-    # extract_colocados_ocr.py's docstring), institution is left blank.
-    # Needs the native-text years' clean specialty set as a reference, so
-    # this runs after the loop above rather than year-by-year.
+    # OCR'd files. Needs the native-text years' clean specialty set as a
+    # reference, so this runs after the loop above rather than year-by-year.
+    # Full institution recovery (extract_colocados_ocr_full.py) only works
+    # for years whose OCR text preserves each record's reading order --
+    # confirmed true for 2025, NOT for 2024 (its institution names wrap
+    # across two lines in the source table and OCR scrambles the
+    # continuation into the next record -- see that module's docstring).
+    # Years not in FULL_ROW_OCR_YEARS fall back to specialty + ordering
+    # number only (extract_colocados_ocr.py), institution left blank.
+    FULL_ROW_OCR_YEARS = {2025}
+
     known_specialties = {r["specialty"] for r in rows}
     for path in ocr_paths:
         year = int(re.search(r"20\d\d", path.name).group(0))
@@ -179,6 +188,26 @@ def build_colocados() -> list[dict]:
         if not ocr_md.exists():
             print(f"skip {path.name}: no OCR cache yet, run backend/ocr_convert.py first")
             continue
+
+        if year in FULL_ROW_OCR_YEARS:
+            try:
+                full_parsed = parse_ocr_colocados_full(str(ocr_md), year, known_specialties)
+            except Exception as e:  # noqa: BLE001
+                print(f"skip {path.name}: OCR full-row parse failed ({e})")
+                continue
+            for r in full_parsed:
+                rows.append(
+                    {
+                        "year": r.year,
+                        "ordering_number": r.ordering_number,
+                        "specialty": r.specialty,
+                        "institution": r.institution,
+                        "canonical_institution": canonicalize(r.institution),
+                    }
+                )
+            print(f"{path.name}: {len(full_parsed)} rows from OCR (with institution)")
+            continue
+
         try:
             parsed = parse_ocr_colocados(str(ocr_md), year, known_specialties)
         except Exception as e:  # noqa: BLE001

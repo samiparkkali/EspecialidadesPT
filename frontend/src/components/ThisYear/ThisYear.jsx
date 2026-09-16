@@ -87,9 +87,8 @@ const ThisYear = ({ vagas }) => {
       <div className="card">
         <h2>Seats available for {latestYear}</h2>
         <p className="subtitle">
-          Click a region on the map (or in the list) to filter. This is the
-          latest year currently loaded, once a newer one is added, it takes
-          over here automatically.
+          Click a region on the map to filter. This is the
+          latest year currently loaded.
         </p>
         <PortugalMap
           selected={selectedRegion}

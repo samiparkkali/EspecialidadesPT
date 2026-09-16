@@ -86,25 +86,29 @@ Publish `frontend/dist/` via a `gh-pages` branch or GitHub Actions. The
 ## Known limitations
 
 - **Per-year PDF layout drift.** Each year's `vagas-YYYY.pdf` can use a
-  different structure (indent hierarchy vs. explicit "Subtotal"/"Total"
-  labels, reading order, header wording). `vagas-2023.pdf` parses with full
-  institution/region detail; 2021, 2022 and 2024 fall back to
-  specialty-level totals only (`backend/extract_vagas_totals.py`, no
-  institution breakdown) since their layout uses an explicit "Total da
-  Especialidade" label instead. `vagas-2025.pdf` isn't parsed yet (its
-  layout has neither that label nor 2023's position pattern). See
-  `backend/extract_vagas.py`'s docstring and `data/processed/REPORT.md`
-  for the specifics of each year.
+  different structure. `vagas-2023.pdf` parses via position-based row
+  matching (`backend/extract_vagas.py`). 2021, 2022, 2024, and (partially)
+  2025 parse via `backend/extract_vagas_labeled.py` instead, which anchors
+  on explicit "Subtotal"/"Total da Especialidade" labels and known
+  specialty/region name patterns rather than position -- full
+  institution/region detail, not just totals. Accuracy varies by year
+  (self-consistency checked: institution seats should sum to each
+  specialty's declared total); run
+  `python backend/extract_vagas_labeled.py data/raw/vagas/vagas-YYYY.pdf`
+  directly to see the current mismatch count for a given year.
 - **"Medicina Geral e Familiar" nests one level deeper** than every other
   specialty (hundreds of individual clinics/USFs under each ACES
-  sub-region). Its specialty/region totals are fine; per-clinic seat rows
-  for that one specialty aren't extracted yet.
-- **Two `colocacoes/` files are scanned PDFs** (`2024-colocados.pdf` fully,
-  `2025-colocados.pdf` after its cover page). Both are OCR'd and parsed
-  (`backend/extract_colocados_ocr.py`), but only specialty + ordering
-  number are recoverable that way — OCR scrambles which institution
-  phrase belongs to which candidate too much to trust positionally, so
-  `institution` is blank for these two years' rows.
+  sub-region), in every year's PDF. Its specialty/region totals are fine;
+  per-clinic institution names for that one specialty are often
+  fragments rather than full names (see `data/processed/QA_FLAGS.md`).
+- **`colocacoes/` for 2024 and 2025 are scanned PDFs**, OCR'd and parsed
+  differently depending on whether that year's OCR text preserves row
+  order: 2025's does, so `backend/extract_colocados_ocr_full.py` recovers
+  specialty + institution + ordering number; 2024's doesn't (institution
+  names wrap across two lines in the source table and OCR scrambles the
+  continuation into the next record), so `backend/extract_colocados_ocr.py`
+  only recovers specialty + ordering number for it, `institution` is
+  blank.
 - **Institution and specialty name normalization is best-effort**, not
   exhaustive — see `backend/institution_mapping.py` (2024/2025 SNS "ULS"
   reorganization) and `backend/specialty_mapping.py` (wording variants
