@@ -47,16 +47,17 @@ python -m pytest tests/ -v            # structural checks on the processed CSVs
 python tests/check_names.py           # data/processed/QA_FLAGS.md, names worth a glance
 ```
 
-For a scanned PDF (native text extraction returns nothing), run OCR first:
+For a scanned PDF (native text extraction returns nothing), run OCR first
+so `build_dataset.py` picks up the cached markdown automatically:
 
 ```bash
 .venv\Scripts\python backend\ocr_convert.py data\raw\colocacoes\2024-colocados.pdf data\processed\ocr_cache\2024-colocados.md
 ```
 
 This is slow (tens of minutes for a 100+ page scanned PDF — no GPU, CPU
-OCR). `build_dataset.py` doesn't parse OCR'd markdown into rows yet (see
-Known limitations below); the cached markdown is there for `make report`
-and for building that parser next.
+OCR). The OCR'd `colocacoes/` files only recover specialty + ordering
+number this way (`backend/extract_colocados_ocr.py`), not institution —
+see Known limitations.
 
 ## Running the app
 
@@ -99,9 +100,11 @@ Publish `frontend/dist/` via a `gh-pages` branch or GitHub Actions. The
   sub-region). Its specialty/region totals are fine; per-clinic seat rows
   for that one specialty aren't extracted yet.
 - **Two `colocacoes/` files are scanned PDFs** (`2024-colocados.pdf` fully,
-  `2025-colocados.pdf` after its cover page) and need OCR — no character-
-  recognition parser is wired up for the OCR output yet, only the
-  markdown dump for review.
+  `2025-colocados.pdf` after its cover page). Both are OCR'd and parsed
+  (`backend/extract_colocados_ocr.py`), but only specialty + ordering
+  number are recoverable that way — OCR scrambles which institution
+  phrase belongs to which candidate too much to trust positionally, so
+  `institution` is blank for these two years' rows.
 - **Institution and specialty name normalization is best-effort**, not
   exhaustive — see `backend/institution_mapping.py` (2024/2025 SNS "ULS"
   reorganization) and `backend/specialty_mapping.py` (wording variants

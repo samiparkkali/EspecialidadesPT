@@ -22,6 +22,7 @@ from pathlib import Path
 import fitz
 
 from extract_colocados import parse_colocados_pdf
+from extract_colocados_ocr import parse_ocr_colocados
 from extract_vagas import parse_vagas_pdf
 from extract_vagas_totals import parse_specialty_totals
 from institution_mapping import canonicalize
@@ -36,11 +37,16 @@ FRONTEND_DATA = ROOT / "frontend" / "public" / "data"
 
 
 def _has_native_text(path: Path) -> bool:
+    """Requires most of the sampled pages to have real text, not just one --
+    a scanned PDF can still have a native-text cover page (e.g.
+    2025-colocados.pdf), which would otherwise pass a "just one page"
+    check and get routed to the native parser instead of OCR, silently
+    losing everything past the cover.
+    """
     doc = fitz.open(path)
-    for i in range(min(5, doc.page_count)):
-        if len(doc[i].get_text().strip()) > 50:
-            return True
-    return False
+    sample = min(5, doc.page_count)
+    with_text = sum(1 for i in range(sample) if len(doc[i].get_text().strip()) > 50)
+    return with_text >= max(2, sample // 2)
 
 
 # "Specialty" values that are actually leaked clinic/institution names from
@@ -137,10 +143,13 @@ def build_vagas(known_specialties: set[str] | None = None) -> list[dict]:
 
 def build_colocados() -> list[dict]:
     rows: list[dict] = []
+    ocr_paths: list[Path] = []
+
     for path in sorted(RAW_COLOC.glob("*.pdf")):
         year = int(re.search(r"20\d\d", path.name).group(0))
         if not _has_native_text(path):
-            print(f"skip {path.name}: scanned PDF, no OCR-based parser yet")
+            ocr_paths.append(path)
+            print(f"skip {path.name} for now: scanned PDF, will use OCR cache if available")
             continue
         try:
             parsed = parse_colocados_pdf(str(path), year)
@@ -158,6 +167,35 @@ def build_colocados() -> list[dict]:
                 }
             )
         print(f"{path.name}: {len(parsed)} rows")
+
+    # OCR'd files: only specialty + ordering number are recoverable (see
+    # extract_colocados_ocr.py's docstring), institution is left blank.
+    # Needs the native-text years' clean specialty set as a reference, so
+    # this runs after the loop above rather than year-by-year.
+    known_specialties = {r["specialty"] for r in rows}
+    for path in ocr_paths:
+        year = int(re.search(r"20\d\d", path.name).group(0))
+        ocr_md = ROOT / "data" / "processed" / "ocr_cache" / f"{path.stem}.md"
+        if not ocr_md.exists():
+            print(f"skip {path.name}: no OCR cache yet, run backend/ocr_convert.py first")
+            continue
+        try:
+            parsed = parse_ocr_colocados(str(ocr_md), year, known_specialties)
+        except Exception as e:  # noqa: BLE001
+            print(f"skip {path.name}: OCR parse failed ({e})")
+            continue
+        for r in parsed:
+            rows.append(
+                {
+                    "year": r.year,
+                    "ordering_number": r.ordering_number,
+                    "specialty": r.specialty,
+                    "institution": "",
+                    "canonical_institution": "",
+                }
+            )
+        print(f"{path.name}: {len(parsed)} rows from OCR (specialty + ordering number only)")
+
     return rows
 
 

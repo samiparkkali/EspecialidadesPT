@@ -82,8 +82,17 @@ def test_colocados_years_in_range():
         assert int(r["year"]) in VALID_YEARS, r
 
 
-def test_colocados_has_specialty_and_institution():
+def test_colocados_has_specialty():
     rows = _read_csv(COLOCADOS_CSV)
     for r in rows:
         assert r["specialty"], r
-        assert r["institution"], r
+
+
+def test_colocados_institution_present_for_native_years_only():
+    """OCR-derived years (extract_colocados_ocr.py) only recover specialty
+    + ordering number, institution is intentionally blank -- see its
+    docstring. Native-text years should always have one."""
+    rows = _read_csv(COLOCADOS_CSV)
+    for r in rows:
+        if int(r["year"]) not in (2024, 2025):
+            assert r["institution"], r

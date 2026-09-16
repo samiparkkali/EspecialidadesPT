@@ -60,6 +60,7 @@ CANONICAL_MAP: dict[str, list[str]] = {
     ],
     "Oncologia Médica": ["Oncologia Médica"],
     "Radioncologia": ["Radioncologia", "Radioterapia"],
+    "Doenças Infecciosas": ["Doenças Infecciosas", "Doenças Infeciosas"],
     # Not yet seen in the years currently parsed (2022 fails to parse,
     # 2024/2025 need OCR) -- kept here so it matches immediately once one
     # of those years is added, per the "added last year" note.
