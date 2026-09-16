@@ -35,12 +35,34 @@ function App() {
 
   const evolutionPoints = useMemo(() => {
     if (!vagas) return [];
-    const rows = vagas.filter((r) => r.institution);
+
+    // Some years only have specialty-level totals (no institution
+    // breakdown, see backend/build_dataset.py's fallback to
+    // extract_vagas_totals.py) -- filtering an institution only makes
+    // sense for years that actually have institution rows, so per
+    // (year, specialty) prefer summing institution rows when present,
+    // otherwise fall back to that specialty's single total row
+    // (region === '' && institution === '').
+    const hasInstitutionData = new Set(
+      vagas.filter((r) => r.institution).map((r) => `${r.year}|${r.specialty}`)
+    );
+
+    const rows = vagas.filter((r) => {
+      const key = `${r.year}|${r.specialty}`;
+      if (hasInstitutionData.has(key)) return Boolean(r.institution);
+      return !r.region && !r.institution;
+    });
+
     const filtered = rows.filter((r) => {
       if (specialty && r.specialty !== specialty) return false;
-      if (institution && (r.canonical_institution || r.institution) !== institution) return false;
+      if (institution) {
+        // Years without institution data can't be filtered by institution.
+        if (!r.institution) return false;
+        if ((r.canonical_institution || r.institution) !== institution) return false;
+      }
       return true;
     });
+
     const byYear = new Map();
     for (const r of filtered) {
       const year = Number(r.year);

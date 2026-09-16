@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { Fragment, useMemo, useState } from 'react';
 import PortugalMap from '../PortugalMap/PortugalMap';
 
 // Shows the latest year currently loaded, region by region. Once the
@@ -9,9 +9,12 @@ const ThisYear = ({ vagas }) => {
   const [selectedRegion, setSelectedRegion] = useState('');
   const [selectedSpecialty, setSelectedSpecialty] = useState('');
 
+  // Picks the latest year that actually has institution-level rows -- some
+  // years only have specialty totals (see backend/build_dataset.py), which
+  // this map/drill-down view can't do anything with.
   const latestYear = useMemo(() => {
-    if (!vagas.length) return null;
-    return Math.max(...vagas.map((r) => Number(r.year)));
+    const years = vagas.filter((r) => r.institution).map((r) => Number(r.year));
+    return years.length ? Math.max(...years) : null;
   }, [vagas]);
 
   const yearRows = useMemo(
@@ -43,18 +46,25 @@ const ThisYear = ({ vagas }) => {
       .sort((a, b) => b.seats - a.seats);
   }, [filteredRows]);
 
-  const byInstitution = useMemo(() => {
-    if (!selectedSpecialty) return [];
-    const totals = new Map();
+  const institutionsBySpecialty = useMemo(() => {
+    const bySpecialtyMap = new Map();
     for (const r of filteredRows) {
-      if (r.specialty !== selectedSpecialty) continue;
+      if (!bySpecialtyMap.has(r.specialty)) bySpecialtyMap.set(r.specialty, new Map());
+      const totals = bySpecialtyMap.get(r.specialty);
       const name = r.canonical_institution || r.institution;
       totals.set(name, (totals.get(name) || 0) + Number(r.seats));
     }
-    return Array.from(totals.entries())
-      .map(([institution, seats]) => ({ institution, seats }))
-      .sort((a, b) => b.seats - a.seats);
-  }, [filteredRows, selectedSpecialty]);
+    const result = new Map();
+    for (const [specialty, totals] of bySpecialtyMap) {
+      result.set(
+        specialty,
+        Array.from(totals.entries())
+          .map(([institution, seats]) => ({ institution, seats }))
+          .sort((a, b) => b.seats - a.seats)
+      );
+    }
+    return result;
+  }, [filteredRows]);
 
   const selectRegion = (region) => {
     setSelectedRegion(region);
@@ -102,16 +112,42 @@ const ThisYear = ({ vagas }) => {
             </tr>
           </thead>
           <tbody>
-            {bySpecialty.map((r) => (
-              <tr
-                key={r.specialty}
-                onClick={() => setSelectedSpecialty(r.specialty === selectedSpecialty ? '' : r.specialty)}
-                style={{ cursor: 'pointer', color: r.specialty === selectedSpecialty ? 'var(--color-secondary)' : undefined }}
-              >
-                <td>{r.specialty}</td>
-                <td>{r.seats}</td>
-              </tr>
-            ))}
+            {bySpecialty.map((r) => {
+              const isOpen = r.specialty === selectedSpecialty;
+              return (
+                <Fragment key={r.specialty}>
+                  <tr
+                    onClick={() => setSelectedSpecialty(isOpen ? '' : r.specialty)}
+                    style={{ cursor: 'pointer', color: isOpen ? 'var(--color-secondary)' : undefined }}
+                  >
+                    <td>{r.specialty}</td>
+                    <td>{r.seats}</td>
+                  </tr>
+                  {isOpen && (
+                    <tr>
+                      <td colSpan={2} style={{ padding: 0, borderBottom: 'none' }}>
+                        <table style={{ margin: '0.25rem 0 0.75rem 1.5rem', width: 'calc(100% - 1.5rem)' }}>
+                          <thead>
+                            <tr>
+                              <th>Institution</th>
+                              <th>Seats</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {(institutionsBySpecialty.get(r.specialty) || []).map((inst) => (
+                              <tr key={inst.institution}>
+                                <td>{inst.institution}</td>
+                                <td>{inst.seats}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </td>
+                    </tr>
+                  )}
+                </Fragment>
+              );
+            })}
             {bySpecialty.length === 0 && (
               <tr>
                 <td colSpan={2}>No data for this region yet.</td>
@@ -120,36 +156,6 @@ const ThisYear = ({ vagas }) => {
           </tbody>
         </table>
       </div>
-
-      {selectedSpecialty && (
-        <div className="card">
-          <h2>
-            Hospitals offering {selectedSpecialty}
-            {selectedRegion ? ` in ${selectedRegion.replace(/-/g, ' ')}` : ''}
-          </h2>
-          <table>
-            <thead>
-              <tr>
-                <th>Institution</th>
-                <th>Seats</th>
-              </tr>
-            </thead>
-            <tbody>
-              {byInstitution.map((r) => (
-                <tr key={r.institution}>
-                  <td>{r.institution}</td>
-                  <td>{r.seats}</td>
-                </tr>
-              ))}
-              {byInstitution.length === 0 && (
-                <tr>
-                  <td colSpan={2}>No institution breakdown available.</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      )}
     </>
   );
 };

@@ -23,6 +23,7 @@ import fitz
 
 from extract_colocados import parse_colocados_pdf
 from extract_vagas import parse_vagas_pdf
+from extract_vagas_totals import parse_specialty_totals
 from institution_mapping import canonicalize
 from region_mapping import region_key
 from specialty_mapping import canonicalize_specialty
@@ -74,12 +75,14 @@ def build_vagas(known_specialties: set[str] | None = None) -> list[dict]:
         if not _has_native_text(path):
             print(f"skip {path.name}: scanned PDF, no OCR-based parser yet")
             continue
+
         try:
             parsed = parse_vagas_pdf(str(path), year)
         except Exception as e:  # noqa: BLE001
-            print(f"skip {path.name}: parse failed ({e})")
-            continue
-        kept = 0
+            print(f"{path.name}: full parse raised ({e})")
+            parsed = []
+
+        file_rows: list[dict] = []
         for r in parsed:
             if not r.specialty or _looks_like_institution(r.specialty):
                 if r.specialty:
@@ -89,8 +92,7 @@ def build_vagas(known_specialties: set[str] | None = None) -> list[dict]:
             if known_specialties is not None and canonical not in known_specialties:
                 rejected.add(r.specialty)
                 continue
-            kept += 1
-            rows.append(
+            file_rows.append(
                 {
                     "year": r.year,
                     "specialty": canonical,
@@ -101,7 +103,32 @@ def build_vagas(known_specialties: set[str] | None = None) -> list[dict]:
                     "canonical_institution": canonicalize(r.institution) if r.institution else "",
                 }
             )
-        print(f"{path.name}: {kept}/{len(parsed)} rows kept")
+
+        if file_rows:
+            rows.extend(file_rows)
+            print(f"{path.name}: {len(file_rows)}/{len(parsed)} rows kept")
+        else:
+            # Either parse_vagas_pdf raised, or it ran but every row got
+            # rejected (e.g. wrong indent calibration for that year's
+            # layout -- see extract_vagas.py). Either way, fall back to
+            # specialty-level totals only (extract_vagas_totals.py), which
+            # uses explicit "Total da Especialidade" labels instead of
+            # position-based row matching.
+            totals = parse_specialty_totals(str(path), year, known_specialties or set())
+            for t in totals:
+                rows.append(
+                    {
+                        "year": t.year,
+                        "specialty": t.specialty,
+                        "region": "",
+                        "region_key": "",
+                        "institution": "",
+                        "seats": t.seats,
+                        "canonical_institution": "",
+                    }
+                )
+            print(f"{path.name}: {len(totals)} specialty-level totals (no institution breakdown)")
+
     if rejected:
         print(f"rejected {len(rejected)} non-specialty labels (MGF nesting artifacts): "
               f"{sorted(rejected)[:5]}{'...' if len(rejected) > 5 else ''}")
