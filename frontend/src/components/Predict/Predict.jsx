@@ -63,28 +63,28 @@ const Predict = ({ colocados }) => {
 
   return (
     <div className="card">
-      <h2>O que posso escolher com o meu número de ordenação?</h2>
+      <h2>What could I get into with this ordering number?</h2>
       <p className="subtitle">
-        Para cada especialidade/instituição, mostra em que anos o número de
-        ordenação introduzido teria entrado (número de ordenação ≤ último
-        colocado nesse ano). Não é uma previsão real do próximo ano — apenas
-        o que os dados já carregados mostram, ano a ano.
+        For each specialty/institution, shows which years this ordering
+        number would have been good enough for (ordering number at or below
+        that year's last candidate placed). Not a real forecast, just what
+        the loaded years actually show, year by year.
       </p>
       <div className="filters-row">
         <label htmlFor="ordering-input">
-          Número de ordenação
+          Ordering number
           <input
             id="ordering-input"
             type="number"
             min="1"
             value={orderingNumber}
             onChange={(e) => setOrderingNumber(e.target.value)}
-            placeholder="Ex: 1200"
+            placeholder="e.g. 1200"
           />
         </label>
 
         <SearchableSelect
-          label="Especialidade"
+          label="Specialty"
           options={specialties}
           value={specialtyFilter}
           onChange={setSpecialtyFilter}
@@ -95,10 +95,10 @@ const Predict = ({ colocados }) => {
         <table style={{ marginTop: '1rem' }}>
           <thead>
             <tr>
-              <th>Especialidade</th>
-              <th>Instituição</th>
-              <th>Anos em que entraria</th>
-              <th>Cutoff médio</th>
+              <th>Specialty</th>
+              <th>Institution</th>
+              <th>Years you'd get in</th>
+              <th>Average cutoff</th>
             </tr>
           </thead>
           <tbody>
@@ -109,7 +109,7 @@ const Predict = ({ colocados }) => {
                 <td>
                   {r.eligibleYears.join(', ')}
                   {r.eligibleYears.length < r.totalYears && (
-                    <span className="subtitle"> (de {r.totalYears} anos com dados)</span>
+                    <span className="subtitle"> (of {r.totalYears} years with data)</span>
                   )}
                 </td>
                 <td>{r.avgCutoff}</td>
@@ -117,7 +117,7 @@ const Predict = ({ colocados }) => {
             ))}
             {results.length === 0 && (
               <tr>
-                <td colSpan={4}>Nenhuma opção encontrada para este número, com os dados atuais.</td>
+                <td colSpan={4}>No matches for this number with the current data. Maybe try plumbing.</td>
               </tr>
             )}
           </tbody>

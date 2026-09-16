@@ -2,7 +2,7 @@ import styles from './Evolution.module.css';
 
 const Evolution = ({ points }) => {
   if (!points.length) {
-    return <p className="subtitle">Sem dados para os filtros selecionados.</p>;
+    return <p className="subtitle">No data for the selected filters.</p>;
   }
 
   const maxSeats = Math.max(...points.map((p) => p.seats), 1);
@@ -12,7 +12,7 @@ const Evolution = ({ points }) => {
 
   return (
     <div className="card">
-      <h2 className={styles.title}>Vagas por ano</h2>
+      <h2 className={styles.title}>Seats by year</h2>
       <svg viewBox={`0 0 ${width} ${height + 24}`} className={styles.chart} preserveAspectRatio="xMidYMid meet">
         {points.map((p, i) => {
           const barHeight = (p.seats / maxSeats) * height;

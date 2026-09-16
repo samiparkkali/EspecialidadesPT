@@ -44,11 +44,11 @@ function App() {
   }, [vagas, specialty, institution]);
 
   if (vagasError || colocadosError) {
-    return <p>Erro a carregar os dados: {String(vagasError || colocadosError)}</p>;
+    return <p>Failed to load data: {String(vagasError || colocadosError)}</p>;
   }
 
   if (!vagas || !colocados) {
-    return <p>A carregar dados...</p>;
+    return <p>Loading data...</p>;
   }
 
   return (
@@ -56,9 +56,9 @@ function App() {
       <h1>Grey&apos;s Internato</h1>
       <p className="subtitle">
         It&apos;s a beautiful day to pick the specialty that will one day let
-        you retire early and become a happy plumber. Evolução de vagas do
-        Internato Médico por especialidade, instituição e ano. Dados
-        extraídos dos avisos oficiais da ACSS.
+        you retire early and become a happy plumber. Seat offers and
+        placements from Portugal&apos;s Internato Médico, by specialty,
+        institution and year, extracted from the official ACSS notices.
       </p>
 
       <Filters

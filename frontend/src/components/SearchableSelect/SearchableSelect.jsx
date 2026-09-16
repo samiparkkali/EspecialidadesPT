@@ -26,7 +26,7 @@ const SearchableSelect = ({ label, options, value, onChange, placeholder }) => {
         list={listId}
         value={query}
         onChange={handleChange}
-        placeholder={placeholder || 'Escrever para pesquisar...'}
+        placeholder={placeholder || 'Type to search...'}
       />
       <datalist id={listId}>
         {options.map((o) => (
@@ -36,12 +36,12 @@ const SearchableSelect = ({ label, options, value, onChange, placeholder }) => {
       {value ? (
         <span className={styles.chip}>
           {value}
-          <button type="button" onClick={() => onChange('')} aria-label={`Remover filtro ${label}`}>
+          <button type="button" onClick={() => onChange('')} aria-label={`Clear ${label} filter`}>
             &times;
           </button>
         </span>
       ) : (
-        <span className={styles.chipMuted}>Todas / todos</span>
+        <span className={styles.chipMuted}>All</span>
       )}
     </label>
   );
