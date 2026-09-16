@@ -1,13 +1,21 @@
 import { useMemo, useState } from 'react';
 import { useDataset } from './hooks/useDataset';
+import Tabs from './components/Tabs/Tabs';
 import Filters from './components/Filters/Filters';
 import Evolution from './components/Evolution/Evolution';
 import Predict from './components/Predict/Predict';
+import ThisYear from './components/ThisYear/ThisYear';
+
+const TABS = [
+  { id: 'overview', label: 'Overview' },
+  { id: 'this-year', label: "This Year's Seats" },
+];
 
 function App() {
   const { data: vagas, error: vagasError } = useDataset('vagas.json');
   const { data: colocados, error: colocadosError } = useDataset('colocados.json');
 
+  const [activeTab, setActiveTab] = useState('overview');
   const [specialty, setSpecialty] = useState('');
   const [institution, setInstitution] = useState('');
 
@@ -61,18 +69,26 @@ function App() {
         institution and year, extracted from the official ACSS notices.
       </p>
 
-      <Filters
-        specialties={specialties}
-        institutions={institutions}
-        specialty={specialty}
-        institution={institution}
-        onSpecialtyChange={setSpecialty}
-        onInstitutionChange={setInstitution}
-      />
+      <Tabs tabs={TABS} active={activeTab} onChange={setActiveTab} />
 
-      <Evolution points={evolutionPoints} />
+      {activeTab === 'overview' && (
+        <>
+          <Filters
+            specialties={specialties}
+            institutions={institutions}
+            specialty={specialty}
+            institution={institution}
+            onSpecialtyChange={setSpecialty}
+            onInstitutionChange={setInstitution}
+          />
 
-      <Predict colocados={colocados} />
+          <Evolution points={evolutionPoints} />
+
+          <Predict colocados={colocados} />
+        </>
+      )}
+
+      {activeTab === 'this-year' && <ThisYear vagas={vagas} />}
     </>
   );
 }

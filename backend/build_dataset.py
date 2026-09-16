@@ -24,6 +24,7 @@ import fitz
 from extract_colocados import parse_colocados_pdf
 from extract_vagas import parse_vagas_pdf
 from institution_mapping import canonicalize
+from region_mapping import region_key
 from specialty_mapping import canonicalize_specialty
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -82,6 +83,7 @@ def build_vagas() -> list[dict]:
                     "year": r.year,
                     "specialty": canonicalize_specialty(r.specialty),
                     "region": r.region or "",
+                    "region_key": region_key(r.region) or "",
                     "institution": r.institution or "",
                     "seats": r.seats,
                     "canonical_institution": canonicalize(r.institution) if r.institution else "",
