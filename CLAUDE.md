@@ -15,9 +15,18 @@ realistically get into, filterable by region/hospital.
 ## Layout
 
 - `data/raw/vagas/` — yearly seat-offer PDFs, one row per
-  specialty/region/hospital/seat-count.
+  specialty/region/hospital/seat-count. **The only source of "seats
+  available"** — never derive a seat count from colocados (count of
+  placements, or number of colocados rows). Vacancies routinely go
+  unfilled, so colocados count is always <= vagas seats for a given
+  specialty/institution/year; treating them as interchangeable
+  overstates how competitive a specialty looks and understates leftover
+  capacity. `vagas.csv`'s `seats` column is the only field that should
+  ever be summed/charted as "seats"; colocados rows don't have one.
 - `data/raw/colocacoes/` — yearly placement-result PDFs, one row per
-  candidate/ordering-number/specialty/hospital placed into.
+  candidate/ordering-number/specialty/hospital placed into. Use this for
+  who got placed and their ordering number/cutoff, not for how many
+  seats existed.
 - `data/processed/` — generated CSV/parquet from the pipeline. Not
   committed (git-ignored) — regenerate with `make process`.
 - `docling/` — git submodule, a PDF→markdown conversion pipeline. Extend it

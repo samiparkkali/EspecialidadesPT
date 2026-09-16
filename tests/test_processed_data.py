@@ -82,6 +82,15 @@ def test_colocados_years_in_range():
         assert int(r["year"]) in VALID_YEARS, r
 
 
+def test_colocados_has_no_seats_column():
+    """Seat counts only ever come from vagas.csv -- colocados counts
+    placements, which is routinely lower than seats offered (unfilled
+    vacancies are normal, see CLAUDE.md). A "seats" column here would
+    invite someone to sum/chart it as if it were capacity."""
+    rows = _read_csv(COLOCADOS_CSV)
+    assert "seats" not in rows[0]
+
+
 def test_colocados_has_specialty():
     rows = _read_csv(COLOCADOS_CSV)
     for r in rows:
