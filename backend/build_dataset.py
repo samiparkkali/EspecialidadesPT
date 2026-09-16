@@ -58,7 +58,15 @@ def _looks_like_institution(text: str) -> bool:
     return text.strip().startswith(_INSTITUTION_PREFIXES) or len(text.strip()) <= 3
 
 
-def build_vagas() -> list[dict]:
+def build_vagas(known_specialties: set[str] | None = None) -> list[dict]:
+    """`known_specialties` (already run through canonicalize_specialty) is
+    the closed set of real specialty names -- anything else, prefix-like or
+    not (e.g. "Moncorvo", "Cacém", town/clinic name fragments that don't
+    start with a recognizable institution prefix), gets rejected instead of
+    silently shipped as a fake "specialty". Built from the cleanly-parsed
+    colocados data (see main()), which doesn't have the MGF nesting
+    problem vagas parsing does.
+    """
     rows: list[dict] = []
     rejected: set[str] = set()
     for path in sorted(RAW_VAGAS.glob("*.pdf")):
@@ -77,11 +85,15 @@ def build_vagas() -> list[dict]:
                 if r.specialty:
                     rejected.add(r.specialty)
                 continue
+            canonical = canonicalize_specialty(r.specialty)
+            if known_specialties is not None and canonical not in known_specialties:
+                rejected.add(r.specialty)
+                continue
             kept += 1
             rows.append(
                 {
                     "year": r.year,
-                    "specialty": canonicalize_specialty(r.specialty),
+                    "specialty": canonical,
                     "region": r.region or "",
                     "region_key": region_key(r.region) or "",
                     "institution": r.institution or "",
@@ -145,8 +157,10 @@ def write_csv_and_json(rows: list[dict], name: str) -> None:
 
 
 def main() -> None:
-    write_csv_and_json(build_vagas(), "vagas")
-    write_csv_and_json(build_colocados(), "colocados")
+    colocados_rows = build_colocados()
+    known_specialties = {r["specialty"] for r in colocados_rows}
+    write_csv_and_json(build_vagas(known_specialties or None), "vagas")
+    write_csv_and_json(colocados_rows, "colocados")
 
 
 if __name__ == "__main__":
