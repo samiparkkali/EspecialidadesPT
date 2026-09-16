@@ -7,6 +7,7 @@ import PortugalMap from '../PortugalMap/PortugalMap';
 // automatically -- no code change needed, just re-running the pipeline.
 const ThisYear = ({ vagas }) => {
   const [selectedRegion, setSelectedRegion] = useState('');
+  const [selectedSpecialty, setSelectedSpecialty] = useState('');
 
   const latestYear = useMemo(() => {
     if (!vagas.length) return null;
@@ -42,6 +43,24 @@ const ThisYear = ({ vagas }) => {
       .sort((a, b) => b.seats - a.seats);
   }, [filteredRows]);
 
+  const byInstitution = useMemo(() => {
+    if (!selectedSpecialty) return [];
+    const totals = new Map();
+    for (const r of filteredRows) {
+      if (r.specialty !== selectedSpecialty) continue;
+      const name = r.canonical_institution || r.institution;
+      totals.set(name, (totals.get(name) || 0) + Number(r.seats));
+    }
+    return Array.from(totals.entries())
+      .map(([institution, seats]) => ({ institution, seats }))
+      .sort((a, b) => b.seats - a.seats);
+  }, [filteredRows, selectedSpecialty]);
+
+  const selectRegion = (region) => {
+    setSelectedRegion(region);
+    setSelectedSpecialty('');
+  };
+
   if (!latestYear) {
     return (
       <div className="card">
@@ -64,7 +83,7 @@ const ThisYear = ({ vagas }) => {
         </p>
         <PortugalMap
           selected={selectedRegion}
-          onSelect={setSelectedRegion}
+          onSelect={selectRegion}
           counts={seatsByRegion}
         />
       </div>
@@ -74,6 +93,7 @@ const ThisYear = ({ vagas }) => {
           Seats by specialty
           {selectedRegion ? ` in ${selectedRegion.replace(/-/g, ' ')}` : ' (all of Portugal)'}
         </h2>
+        <p className="subtitle">Click a specialty to see which hospitals offer it here.</p>
         <table>
           <thead>
             <tr>
@@ -83,7 +103,11 @@ const ThisYear = ({ vagas }) => {
           </thead>
           <tbody>
             {bySpecialty.map((r) => (
-              <tr key={r.specialty}>
+              <tr
+                key={r.specialty}
+                onClick={() => setSelectedSpecialty(r.specialty === selectedSpecialty ? '' : r.specialty)}
+                style={{ cursor: 'pointer', color: r.specialty === selectedSpecialty ? 'var(--color-secondary)' : undefined }}
+              >
                 <td>{r.specialty}</td>
                 <td>{r.seats}</td>
               </tr>
@@ -96,6 +120,36 @@ const ThisYear = ({ vagas }) => {
           </tbody>
         </table>
       </div>
+
+      {selectedSpecialty && (
+        <div className="card">
+          <h2>
+            Hospitals offering {selectedSpecialty}
+            {selectedRegion ? ` in ${selectedRegion.replace(/-/g, ' ')}` : ''}
+          </h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Institution</th>
+                <th>Seats</th>
+              </tr>
+            </thead>
+            <tbody>
+              {byInstitution.map((r) => (
+                <tr key={r.institution}>
+                  <td>{r.institution}</td>
+                  <td>{r.seats}</td>
+                </tr>
+              ))}
+              {byInstitution.length === 0 && (
+                <tr>
+                  <td colSpan={2}>No institution breakdown available.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
     </>
   );
 };
