@@ -22,6 +22,9 @@ into.
 - `frontend/` — React + Vite app. Reads static JSON exported from the
   processed data (`frontend/public/data/*.json`), no backend required at
   runtime — deployable as-is to GitHub Pages.
+- `tests/` — pytest unit tests (`test_mappings.py`, `test_processed_data.py`)
+  and `check_names.py`, a non-failing script that flags suspicious
+  specialty/institution names for human review.
 
 See `CLAUDE.md` for coding conventions and PDF-handling notes.
 
@@ -40,6 +43,8 @@ cd frontend && npm install
 ```bash
 make process   # PDFs -> data/processed/*.csv -> frontend/public/data/*.json
 make report    # data/processed/REPORT.md + per-file extracted text dumps
+python -m pytest tests/ -v            # structural checks on the processed CSVs
+python tests/check_names.py           # data/processed/QA_FLAGS.md, names worth a glance
 ```
 
 For a scanned PDF (native text extraction returns nothing), run OCR first:
@@ -81,10 +86,14 @@ Publish `frontend/dist/` via a `gh-pages` branch or GitHub Actions. The
 
 - **Per-year PDF layout drift.** Each year's `vagas-YYYY.pdf` can use a
   different structure (indent hierarchy vs. explicit "Subtotal"/"Total"
-  labels, reading order, header wording). Currently only `vagas-2023.pdf`
-  parses cleanly; 2021/2022/2024/2025 are skipped rather than shipping
-  wrong numbers. See `backend/extract_vagas.py`'s docstring and
-  `data/processed/REPORT.md` for the specifics of each year.
+  labels, reading order, header wording). `vagas-2023.pdf` parses with full
+  institution/region detail; 2021, 2022 and 2024 fall back to
+  specialty-level totals only (`backend/extract_vagas_totals.py`, no
+  institution breakdown) since their layout uses an explicit "Total da
+  Especialidade" label instead. `vagas-2025.pdf` isn't parsed yet (its
+  layout has neither that label nor 2023's position pattern). See
+  `backend/extract_vagas.py`'s docstring and `data/processed/REPORT.md`
+  for the specifics of each year.
 - **"Medicina Geral e Familiar" nests one level deeper** than every other
   specialty (hundreds of individual clinics/USFs under each ACES
   sub-region). Its specialty/region totals are fine; per-clinic seat rows
