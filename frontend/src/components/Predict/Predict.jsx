@@ -8,14 +8,17 @@ import SearchableSelect from '../SearchableSelect/SearchableSelect';
 // (lower ordering number = better rank). Shown per-year, plus an average,
 // since a single averaged cutoff hides how much it varies year to year --
 // this gets more accurate as more years' colocados data get added.
+const UNKNOWN_INSTITUTION = 'Institution not recorded (OCR year)';
+
 const buildCutoffsByYear = (colocados) => {
   const grouped = new Map();
   for (const row of colocados) {
-    const key = `${row.specialty}|||${row.canonical_institution || row.institution}`;
+    const institution = row.canonical_institution || row.institution || UNKNOWN_INSTITUTION;
+    const key = `${row.specialty}|||${institution}`;
     if (!grouped.has(key)) {
       grouped.set(key, {
         specialty: row.specialty,
-        institution: row.canonical_institution || row.institution,
+        institution,
         cutoffByYear: new Map(),
       });
     }

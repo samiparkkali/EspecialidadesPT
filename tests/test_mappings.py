@@ -37,7 +37,11 @@ def test_canonicalize_specialty_normalizes_wording_variants():
 
 
 def test_canonicalize_specialty_passthrough_for_unmapped():
-    assert canonicalize_specialty("Not A Real Specialty") == "Not A Real Specialty"
+    assert canonicalize_specialty("Not A Real Specialty") == "NOT A REAL SPECIALTY"
+
+
+def test_canonicalize_specialty_is_uppercase():
+    assert canonicalize_specialty("Oftalmologia") == "OFTALMOLOGIA"
 
 
 def test_region_key_matches_all_seven_regions():

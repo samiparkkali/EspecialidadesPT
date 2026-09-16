@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
+from pathlib import Path
 
 import fitz
 
@@ -57,12 +58,27 @@ def parse_colocados_pdf(path: str, year: int) -> list[ColocadoRow]:
     return rows
 
 
-def status_and_year(path: str) -> tuple[bool, bool, bool]:
-    """Return (year_matches_filename, is_definitivo, is_provisorio)."""
+def status_and_year(path: str, ocr_fallback_path: str | None = None) -> tuple[bool, bool, bool]:
+    """Return (year_matches_filename, is_definitivo, is_provisorio).
+
+    For a scanned PDF, the native PDF text is empty, so pass
+    `ocr_fallback_path` (the cached OCR markdown, see ocr_convert.py) to
+    check the same thing there instead -- otherwise a scanned file always
+    reports "no match" regardless of what it actually says.
+    """
     fname_year = re.search(r"20\d\d", path)
     fname_year = fname_year.group(0) if fname_year else None
     doc = fitz.open(path)
     text = "\n".join(doc[i].get_text() for i in range(min(5, doc.page_count)))
+
+    # A scanned PDF can still have a short native-text cover page (e.g.
+    # 2025-colocados.pdf), so check "not much text" rather than "no text
+    # at all" -- otherwise the OCR fallback never triggers for it.
+    if len(text.strip()) < 200 and ocr_fallback_path:
+        ocr_path = Path(ocr_fallback_path)
+        if ocr_path.exists():
+            text = ocr_path.read_text(encoding="utf-8")
+
     year_match = fname_year is not None and fname_year in text
     is_def = bool(re.search(r"definitiv", text, re.IGNORECASE))
     is_prov = bool(re.search(r"provis", text, re.IGNORECASE))

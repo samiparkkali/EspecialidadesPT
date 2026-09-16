@@ -72,15 +72,16 @@ CANONICAL_MAP: dict[str, list[str]] = {
 
 
 def canonicalize_specialty(raw_specialty: str) -> str:
-    """Best-effort canonical name; falls back to the raw name (title-cased
-    for consistent display) if no mapping matches."""
+    """Best-effort canonical name (display/filter form -- always uppercase,
+    matching institution_mapping.canonicalize's convention). Falls back to
+    the raw name (uppercased) if no mapping matches."""
     if not raw_specialty:
         return raw_specialty
     for canonical, variants in CANONICAL_MAP.items():
         for variant in variants:
             if raw_specialty.strip().lower() == variant.lower():
-                return canonical
-    return raw_specialty.strip()
+                return canonical.upper()
+    return raw_specialty.strip().upper()
 
 
 if __name__ == "__main__":

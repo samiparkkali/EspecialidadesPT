@@ -18,9 +18,9 @@ COLOCADOS_CSV = ROOT / "data" / "processed" / "colocados.csv"
 # level leaking clinic/town names as fake specialties) -- regression guard,
 # not exhaustive, see check_names.py for open-ended review.
 KNOWN_BAD_SPECIALTIES = {
-    "Moncorvo", "Cacém", "Madeir", "Queirós", "Santiago", "Caravela",
-    "Dunas", "Infesta", "Oceanos", "Lagoa", "Mogadouro", "Eanes",
-    "Pescadores", "N.º",
+    "MONCORVO", "CACÉM", "MADEIR", "QUEIRÓS", "SANTIAGO", "CARAVELA",
+    "DUNAS", "INFESTA", "OCEANOS", "LAGOA", "MOGADOURO", "EANES",
+    "PESCADORES", "N.º",
 }
 
 VALID_YEARS = range(2021, 2026)
