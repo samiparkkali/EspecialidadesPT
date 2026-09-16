@@ -1,0 +1,3 @@
+[submodule "docling"]
+	path = docling
+	url = git@github.com:samiparkkali/medis-docling.git
