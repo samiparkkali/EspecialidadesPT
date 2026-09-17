@@ -34,6 +34,9 @@ from region_mapping import region_key
 from specialty_mapping import canonicalize_specialty
 from vagas_corrections import apply_corrections
 from colocados_corrections import apply_corrections as apply_colocados_corrections
+from log_utils import get_logger
+
+logger = get_logger(__name__)
 
 ROOT = Path(__file__).resolve().parent.parent
 RAW_VAGAS = ROOT / "data" / "raw" / "vagas"
@@ -117,6 +120,19 @@ def _leaf_rows_only(parsed_rows: list) -> list:
         if second and (total is None or sum(r.seats for r in second) == total):
             out.extend(second)
             continue
+
+        # Neither breakdown reconciled with the printed total -- ship whatever
+        # we have, but flag it since this is exactly the case this function
+        # exists to catch (parser misattribution silently over/under-counting
+        # a specialty's seats).
+        if total is not None and (with_institution or with_region):
+            logger.warning(
+                "_leaf_rows_only: %s seats don't reconcile with printed total %d "
+                "(institution sum=%s, region sum=%s) -- shipping the most granular breakdown anyway",
+                group[0].specialty, total,
+                sum(r.seats for r in with_institution) if with_institution else None,
+                sum(r.seats for r in with_region) if with_region else None,
+            )
 
         # Prefer the printed total, else the most granular breakdown available.
         out.extend(total_rows or with_institution or with_region)

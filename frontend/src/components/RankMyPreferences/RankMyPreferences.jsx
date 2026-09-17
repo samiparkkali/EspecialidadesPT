@@ -102,6 +102,24 @@ const computeLikelihood = (preferences, cutoffsByKey, institutionsByCombo, myNum
   };
 };
 
+// Per-institution odds for one region-only combo, sampled the same way computeLikelihood does.
+const institutionBreakdownFor = (institutions, specialty, cutoffsByKey, myNumber, offset, maxOrdering) =>
+  institutions.map((inst) => {
+    const entries = cutoffsByKey.get(cutoffKey(specialty, inst.institution));
+    const cutoffText = entries && entries.length ? entries.map(([year, n]) => `${year}: ${n}`).join(' · ') : null;
+    let pct = null;
+    if (myNumber && entries && entries.length) {
+      let hits = 0;
+      for (let t = 0; t < LIKELIHOOD_TRIALS; t++) {
+        const drawnNumber = Math.min(maxOrdering, Math.max(1, myNumber + Math.round((Math.random() * 2 - 1) * offset)));
+        const cutoff = entries[Math.floor(Math.random() * entries.length)][1];
+        if (drawnNumber <= cutoff) hits += 1;
+      }
+      pct = Math.round((hits / LIKELIHOOD_TRIALS) * 100);
+    }
+    return { institution: inst.institution, seats: inst.seats, cutoffText, pct };
+  });
+
 const RankMyPreferences = ({ vagas, colocados }) => {
   const [preferences, setPreferences] = useState([]);
   const [expandedCombo, setExpandedCombo] = useState(null);
@@ -242,29 +260,6 @@ const RankMyPreferences = ({ vagas, colocados }) => {
     return min === max ? `${year}: ${min}` : `${year}: ${min}–${max}`;
   };
 
-  const institutionBreakdown = (specialty, regionKey, myNum, offset, maxOrd) => {
-    const cacheKey = `${specialty}|||${regionKey}`;
-    if (breakdownCache.has(cacheKey)) return breakdownCache.get(cacheKey);
-    const institutions = institutionsByCombo.get(baseComboKey(specialty, regionKey)) || [];
-    const result = institutions.map((inst) => {
-      const entries = cutoffsByKey.get(cutoffKey(specialty, inst.institution));
-      const cutoffText = entries && entries.length ? entries.map(([year, n]) => `${year}: ${n}`).join(' · ') : null;
-      let pct = null;
-      if (myNum && entries && entries.length) {
-        let hits = 0;
-        for (let t = 0; t < LIKELIHOOD_TRIALS; t++) {
-          const drawnNumber = Math.min(maxOrd, Math.max(1, myNum + Math.round((Math.random() * 2 - 1) * offset)));
-          const cutoff = entries[Math.floor(Math.random() * entries.length)][1];
-          if (drawnNumber <= cutoff) hits += 1;
-        }
-        pct = Math.round((hits / LIKELIHOOD_TRIALS) * 100);
-      }
-      return { institution: inst.institution, seats: inst.seats, cutoffText, pct };
-    });
-    breakdownCache.set(cacheKey, result);
-    return result;
-  };
-
   const availableCombos = useMemo(() => {
     const combos = [];
     for (const specialty of allSpecialties) {
@@ -350,16 +345,39 @@ const RankMyPreferences = ({ vagas, colocados }) => {
   const myNumber = Number(myOrderingNumber) > 0 ? Math.min(maxOrdering, Number(myOrderingNumber)) : null;
   const clampedOffset = Math.max(1, Number(spreadOffset) || 200);
 
-  // Cache per (specialty, region): "Your ranking" and "Likelihood" both compute the same breakdown per render,
-  // and without caching each call rolled fresh Math.random() trials, showing two different percentages at once.
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- deps intentionally drive a cache *reset*, not a value read here.
-  const breakdownCache = useMemo(() => new Map(), [myNumber, clampedOffset, institutionsByCombo, cutoffsByKey, maxOrdering]);
-
   // Live odds for the ranking as sketched -- see computeLikelihood above.
   const likelihood = useMemo(() => {
     if (!myNumber || preferences.length === 0) return null;
     return computeLikelihood(preferences, cutoffsByKey, institutionsByCombo, myNumber, clampedOffset, maxOrdering);
   }, [myNumber, preferences, clampedOffset, institutionsByCombo, cutoffsByKey, maxOrdering]);
+
+  // Precomputes the institution breakdown for every region-only combo this
+  // render actually needs (from "Your ranking" and "Likelihood"), once, in a
+  // single pure pass -- both panels then just look up the same result by key
+  // instead of each rolling independent Math.random() trials, which used to
+  // show two different percentages for the same thing at once.
+  const breakdownsByCombo = useMemo(() => {
+    const neededCombos = new Set();
+    for (const p of preferences) {
+      if (!p.institution) neededCombos.add(baseComboKey(p.specialty, p.regionKey));
+    }
+    if (likelihood) {
+      for (const opt of likelihood.perOption) {
+        if (!opt.institution) neededCombos.add(baseComboKey(opt.specialty, opt.regionKey));
+      }
+    }
+
+    const map = new Map();
+    for (const base of neededCombos) {
+      const specialty = base.split('|||')[0];
+      const institutions = institutionsByCombo.get(base) || [];
+      const result = institutionBreakdownFor(institutions, specialty, cutoffsByKey, myNumber, clampedOffset, maxOrdering);
+      map.set(base, result);
+    }
+    return map;
+  }, [preferences, likelihood, myNumber, clampedOffset, institutionsByCombo, cutoffsByKey, maxOrdering]);
+
+  const institutionBreakdown = (specialty, regionKey) => breakdownsByCombo.get(baseComboKey(specialty, regionKey)) || [];
 
   if (!latestYear) {
     return (
@@ -543,7 +561,7 @@ const RankMyPreferences = ({ vagas, colocados }) => {
                       )
                     : null;
                 const breakdown = canBreakdown
-                  ? institutionBreakdown(p.specialty, p.regionKey, myNumber, clampedOffset, maxOrdering).map((inst) =>
+                  ? institutionBreakdown(p.specialty, p.regionKey).map((inst) =>
                       likelihoodPct?.hasData ? { ...inst, pct: likelihoodPct.pct } : inst
                     )
                   : null;
@@ -626,7 +644,7 @@ const RankMyPreferences = ({ vagas, colocados }) => {
                 const canBreakdown = !opt.institution && regionInstitutions.length > 0;
                 // A single-institution region *is* that institution -- reuse its pct rather than re-simulating.
                 const breakdown = canBreakdown
-                  ? institutionBreakdown(opt.specialty, opt.regionKey, myNumber, clampedOffset, maxOrdering).map(
+                  ? institutionBreakdown(opt.specialty, opt.regionKey).map(
                       (inst) => (regionInstitutions.length === 1 && opt.hasData ? { ...inst, pct: opt.pct } : inst)
                     )
                   : null;
