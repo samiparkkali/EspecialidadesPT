@@ -30,8 +30,7 @@ const comboKey = (specialty, regionKey, institution = '') => `${specialty}|||${r
 const baseComboKey = (specialty, regionKey) => `${specialty}|||${regionKey}`;
 const cutoffKey = (specialty, institution) => `${specialty}|||${institution}`;
 
-// Weighted random pick -- used to pick which institution a region-only
-// preference "means" for a trial, bigger institutions more likely.
+// Weighted random pick -- which institution a region-only preference "means" for a trial, bigger institutions more likely.
 const pickWeighted = (items, weightFn) => {
   const total = items.reduce((sum, item) => sum + weightFn(item), 0);
   let r = Math.random() * total;
@@ -42,10 +41,8 @@ const pickWeighted = (items, weightFn) => {
   return items[items.length - 1];
 };
 
-// Draws one plausible cutoff from an option's own historical years, rather
-// than assuming every year wants the same ranking (that used to make popular
-// first choices look impossible). Region-only: weight-picks an institution
-// by seats first, then samples its history. null means no historical data.
+// Draws one plausible cutoff from an option's own history, rather than assuming every year needs the same rank.
+// Region-only: weight-picks an institution by seats first, then samples its history. null means no data.
 const sampleCutoff = (cutoffsByKey, institutionsByCombo, specialty, regionKey, institution) => {
   if (institution) {
     const entries = cutoffsByKey.get(cutoffKey(specialty, institution));
@@ -63,10 +60,8 @@ const sampleCutoff = (cutoffsByKey, institutionsByCombo, specialty, regionKey, i
   return entries[Math.floor(Math.random() * entries.length)][1];
 };
 
-// Each option's pct is its own MARGINAL odds of admitting your drawn number,
-// independent of other options -- so a safe low-cutoff option near the
-// bottom still shows near-100% even though you'd likely be placed earlier.
-// That "placed earlier" effect is summarized once in notPlacedPct instead.
+// Each option's pct is its own MARGINAL odds, independent of the others -- a safe low-cutoff option near the
+// bottom still shows near-100% even if you'd be placed earlier; that effect is summarized once in notPlacedPct.
 const computeLikelihood = (preferences, cutoffsByKey, institutionsByCombo, myNumber, offset, maxOrdering) => {
   const perOptionHits = new Array(preferences.length).fill(0);
   const perOptionTrials = new Array(preferences.length).fill(0);
@@ -148,9 +143,7 @@ const RankMyPreferences = ({ vagas, colocados }) => {
     return map;
   }, [yearRows]);
 
-  // Region lookup from ALL years of vagas (not just latestYear) so an
-  // institution that has cutoff history but no seat this year can still be
-  // placed under its right region below, instead of vanishing.
+  // Region lookup from ALL years of vagas, so a no-longer-offered institution still resolves to its region.
   const regionByInstitution = useMemo(() => {
     const map = new Map();
     for (const r of vagas) {
@@ -172,10 +165,7 @@ const RankMyPreferences = ({ vagas, colocados }) => {
       totals.set(name, (totals.get(name) || 0) + (Number(r.seats) || 0));
     }
 
-    // Union in institutions with colocados cutoff history that have no seat
-    // this year (renamed, merged, or simply not offered) -- otherwise their
-    // history is invisible here even though Predict shows it fine, since
-    // Predict reads all years of colocados directly with no seat filter.
+    // Union in institutions with cutoff history but no current-year seat, so they don't vanish here (Predict shows them fine).
     const seenBySpecialty = new Map();
     for (const [base, totals] of map) {
       const specialty = base.split('|||')[0];
@@ -207,9 +197,7 @@ const RankMyPreferences = ({ vagas, colocados }) => {
     return result;
   }, [yearRows, colocados, regionByInstitution]);
 
-  // Historical "Golden Ticket Number" cutoffs per specialty+institution, every
-  // year on record, most recent first -- context for "is this realistic for
-  // my number" and the raw material the likelihood panel samples from.
+  // Historical Golden Ticket Number cutoffs per specialty+institution, most recent first -- feeds the likelihood panel.
   const cutoffsByKey = useMemo(() => {
     const map = new Map();
     for (const row of colocados) {
@@ -229,8 +217,7 @@ const RankMyPreferences = ({ vagas, colocados }) => {
     return result;
   }, [colocados]);
 
-  // Region entries show a range across institutions (which can straddle very
-  // different cutoffs) rather than one specific institution's history.
+  // Region entries show a range across institutions rather than one institution's history.
   const cutoffSummary = (specialty, regionKey, institution) => {
     if (institution) {
       const entries = cutoffsByKey.get(cutoffKey(specialty, institution));
@@ -238,9 +225,7 @@ const RankMyPreferences = ({ vagas, colocados }) => {
       return entries.map(([year, n]) => `${year}: ${n}`).join(' · ');
     }
     const institutions = institutionsByCombo.get(baseComboKey(specialty, regionKey)) || [];
-    // A single-institution region has no "range across institutions" to
-    // summarize -- show its full multi-year history instead of collapsing
-    // to just the latest year.
+    // A single-institution region has no range to summarize -- show its full multi-year history instead.
     if (institutions.length === 1) {
       return cutoffSummary(specialty, regionKey, institutions[0].institution);
     }
@@ -286,8 +271,7 @@ const RankMyPreferences = ({ vagas, colocados }) => {
       for (const regionKey of allRegions) {
         const seats = seatsByCombo.get(comboKey(specialty, regionKey)) || 0;
         const institutions = institutionsByCombo.get(baseComboKey(specialty, regionKey)) || [];
-        // Keep a combo browsable even with 0 current seats, as long as some
-        // institution in it has real cutoff history (see institutionsByCombo).
+        // Keep a combo browsable with 0 current seats if some institution in it has cutoff history.
         if (seats > 0 || institutions.length > 0) {
           combos.push({ specialty, regionKey, seats, institutions });
         }
@@ -311,8 +295,7 @@ const RankMyPreferences = ({ vagas, colocados }) => {
     return numbers.length ? Math.max(...numbers) : 3000;
   }, [colocados]);
 
-  // A combo is ranked as a whole region OR split into institutions, never
-  // both -- the region total already includes every institution's seats.
+  // A combo is ranked as a whole region OR split into institutions, never both -- the region total covers both.
   const comboEntries = (specialty, regionKey) =>
     preferences.filter((p) => p.specialty === specialty && p.regionKey === regionKey);
 
@@ -367,12 +350,9 @@ const RankMyPreferences = ({ vagas, colocados }) => {
   const myNumber = Number(myOrderingNumber) > 0 ? Math.min(maxOrdering, Number(myOrderingNumber)) : null;
   const clampedOffset = Math.max(1, Number(spreadOffset) || 200);
 
-  // Cache per (specialty, region) for the current inputs, since this render
-  // pass's "Your ranking" and "Likelihood" panels both compute the breakdown
-  // for the same region-only preference -- without caching, each call rolled
-  // its own fresh Math.random() trials, so the same institution could show
-  // two different percentages on screen at once (and flicker on any
-  // unrelated re-render).
+  // Cache per (specialty, region): "Your ranking" and "Likelihood" both compute the same breakdown per render,
+  // and without caching each call rolled fresh Math.random() trials, showing two different percentages at once.
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- deps intentionally drive a cache *reset*, not a value read here.
   const breakdownCache = useMemo(() => new Map(), [myNumber, clampedOffset, institutionsByCombo, cutoffsByKey, maxOrdering]);
 
   // Live odds for the ranking as sketched -- see computeLikelihood above.
@@ -438,10 +418,7 @@ const RankMyPreferences = ({ vagas, colocados }) => {
             <div className={styles.comboList}>
               {filteredCombos.map((combo) => {
                 const base = baseComboKey(combo.specialty, combo.regionKey);
-                // Show the expand arrow even for a single institution -- a
-                // region with just one hospital still means one specific
-                // place, and hiding its name behind the region label alone
-                // was confusing (e.g. "Anestesiologia - Açores").
+                // Show the expand arrow even for a single institution -- hiding its name behind the region label alone was confusing.
                 const hasMultipleInstitutions = combo.institutions.length > 0;
                 const regionUsed = regionEntryExists(combo.specialty, combo.regionKey);
                 const anyEntryUsed = comboEntries(combo.specialty, combo.regionKey).length > 0;
@@ -558,9 +535,7 @@ const RankMyPreferences = ({ vagas, colocados }) => {
                   ? institutionsByCombo.get(baseComboKey(p.specialty, p.regionKey)) || []
                   : [];
                 const canBreakdown = isRegionOnly && regionInstitutions.length > 0;
-                // Single-institution region: reuse the likelihood panel's pct for
-                // this exact preference (same underlying quantity) instead of an
-                // independently-simulated number that can differ by chance.
+                // Single-institution region: reuse the likelihood panel's pct instead of a fresh, noisier simulation.
                 const likelihoodPct =
                   regionInstitutions.length === 1
                     ? likelihood?.perOption.find(
@@ -649,11 +624,7 @@ const RankMyPreferences = ({ vagas, colocados }) => {
                   ? institutionsByCombo.get(baseComboKey(opt.specialty, opt.regionKey)) || []
                   : [];
                 const canBreakdown = !opt.institution && regionInstitutions.length > 0;
-                // A single-institution region *is* that institution -- reuse the
-                // region row's own pct (from the shared computeLikelihood trials)
-                // instead of re-simulating independently below, which used to
-                // show two different percentages for the exact same thing purely
-                // from separate Math.random() draws.
+                // A single-institution region *is* that institution -- reuse its pct rather than re-simulating.
                 const breakdown = canBreakdown
                   ? institutionBreakdown(opt.specialty, opt.regionKey, myNumber, clampedOffset, maxOrdering).map(
                       (inst) => (regionInstitutions.length === 1 && opt.hasData ? { ...inst, pct: opt.pct } : inst)

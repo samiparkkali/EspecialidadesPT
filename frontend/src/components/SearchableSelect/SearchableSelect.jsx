@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState } from 'react';
+import { useId, useRef, useState } from 'react';
 import styles from './SearchableSelect.module.css';
 
 // Own listbox instead of a native <datalist> -- datalist renders as a
@@ -18,9 +18,14 @@ const SearchableSelect = ({ label, options, value, onChange, placeholder, getLab
   // selection because it became invalid for a newly-changed sibling filter,
   // or this component's own clear ("x") button. Without this, the input
   // keeps showing old typed text that no longer matches the real selection.
-  useEffect(() => {
-    setQuery('');
-  }, [value]);
+  // Adjusted during render (React's recommended pattern for this, using
+  // state rather than a ref so it plays well with the compiler) instead of
+  // an effect, which would cause an extra render pass every time.
+  const [prevValue, setPrevValue] = useState(value);
+  if (prevValue !== value) {
+    setPrevValue(value);
+    if (query !== '') setQuery('');
+  }
 
   const filtered = query
     ? options.filter((o) => getLabel(o).toLowerCase().includes(query.toLowerCase())).slice(0, 50)
