@@ -254,6 +254,11 @@ CANONICAL_MAP: dict[str, list[str]] = {
     ],
     "ULS Amadora/Sintra": [
         "Hospital Professor Doutor Fernando Fonseca",
+        # The dominant raw spelling abbreviates to "Prof - Dr" (or "Prof, Dr")
+        # rather than spelling out "Professor Doutor" -- without this pattern
+        # every pre-2025 placement fell through unmapped, leaving this ULS
+        # with zero cutoff history before the year it took the ULS name.
+        "Hospital Prof Dr Fernando Fonseca",
         "Hospital Fernando Fonseca",
         "ULS Amadora/Sintra",
         "ULS Amadora-Sintra",
@@ -292,23 +297,48 @@ CANONICAL_MAP: dict[str, list[str]] = {
     # Francisco Gentil" (a substring OCR rarely corrupts, since it isn't at
     # a line's leading edge) plus the "IPO <city>" abbreviation catches
     # every variant without needing to enumerate each typo.
-    "IPO Coimbra Francisco Gentil": [
+    "IPO Coimbra": [
         # Some years print a comma before "Francisco Gentil" ("Oncologia de
         # Coimbra, Francisco Gentil"), others don't -- both need matching.
         "Oncologia de Coimbra, Francisco Gentil",
         "Oncologia de Coimbra Francisco Gentil",
         "IPO Coimbra",
     ],
-    "IPO Lisboa Francisco Gentil": [
+    "IPO Lisboa": [
         "Oncologia de Lisboa, Francisco Gentil",
         "Oncologia de Lisboa Francisco Gentil",
         "IPO Lisboa",
     ],
-    "IPO Porto Francisco Gentil": [
+    "IPO Porto": [
         "Oncologia do Porto, Francisco Gentil",
         "Oncologia do Porto Francisco Gentil",
         "Oncologia do Parto Francisco Gentil",
         "IPO Porto",
+    ],
+    # Private CUF hospitals: some rows say "Hospital CUF X", others drop
+    # "Hospital" or reverse the order to "CUF X Hospital" -- "hospital"
+    # always comes first in the canonical name when it's part of the name.
+    "Hospital CUF Descobertas": [
+        "CUF Descobertas",
+    ],
+    "Hospital CUF Porto": [
+        "CUF Porto",
+    ],
+    "Hospital CUF Tejo": [
+        # CUF Tejo absorbed the older "CUF Infante Santo" site/name.
+        "CUF Infante Santo",
+        "CUF Tejo",
+    ],
+    # Same public-private-partnership hospital, named after: its official
+    # name ("Hospital de Cascais Dr. José de Almeida"), the "HPP" operator
+    # that used to run it, and the generic "Hospital Público-Privado de
+    # Cascais" descriptor -- plus an OCR "L" for "H" typo on "HPP".
+    "Hospital de Cascais Dr. José de Almeida": [
+        "Hospital de Cascais Dr",
+        "HPP Hospital de Cascais",
+        "LPP Hospital de Cascais",
+        "Hospital Público Privado de Cascais",
+        "Hospital Público-Privado de Cascais",
     ],
 }
 

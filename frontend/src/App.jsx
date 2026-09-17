@@ -33,10 +33,11 @@ function App() {
     if (!vagas) return [];
     return [...new Set(
       vagas
+        .filter((r) => !specialty || r.specialty === specialty)
         .map((r) => r.canonical_institution || r.institution)
         .filter(Boolean)
     )].sort();
-  }, [vagas]);
+  }, [vagas, specialty]);
 
   const evolutionPoints = useMemo(() => {
     if (!vagas) return [];
@@ -93,7 +94,18 @@ function App() {
             institutions={institutions}
             specialty={specialty}
             institution={institution}
-            onSpecialtyChange={setSpecialty}
+            onSpecialtyChange={(next) => {
+              setSpecialty(next);
+              setInstitution((current) => {
+                if (!current || !vagas) return current;
+                const stillValid = vagas.some(
+                  (r) =>
+                    (!next || r.specialty === next) &&
+                    (r.canonical_institution || r.institution) === current
+                );
+                return stillValid ? current : '';
+              });
+            }}
             onInstitutionChange={setInstitution}
           />
 
