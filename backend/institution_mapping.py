@@ -395,6 +395,15 @@ def canonicalize(raw_institution: str) -> str:
         return _OVERRIDES.get(result, result)
 
     match_text = _match_key(normalized)
+
+    # A bare "SESARAM" (no clinic/protocol suffix) names Madeira's hospital
+    # seat itself, same physical placement as "Hospital Nélio Mendonça"/
+    # "Hospital Central do Funchal" -- but "SESARAM - Unidade de Saúde
+    # Pública de X" and "Sesaram (vaga Protocolada - X)" are genuinely
+    # different, so this only fires on an exact match, not a substring one.
+    if match_text == "SESARAM":
+        return "HOSPITAL CENTRAL DO FUNCHAL"
+
     for canonical, patterns in CANONICAL_MAP.items():
         for pattern in patterns:
             if _match_key(pattern) in match_text:
