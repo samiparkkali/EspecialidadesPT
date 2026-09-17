@@ -109,6 +109,10 @@ const SpecialtyStats = ({ vagas }) => {
   const maxTotal = Math.max(...totalsByYear.map((p) => p.seats), 1);
   const width = 480;
   const height = 160;
+  // Leave headroom above the tallest bar for its value label -- without it,
+  // the max-value bar's label sits right at (or above) the chart's own top
+  // edge and overlaps whatever is rendered above the chart.
+  const topPad = 16;
   const barSlot = width / Math.max(1, totalsByYear.length);
 
   return (
@@ -134,7 +138,7 @@ const SpecialtyStats = ({ vagas }) => {
           <div className={styles.chartScroll} data-h-scroll>
           <svg viewBox={`0 0 ${width} ${height + 24}`} className={styles.chart}>
             {totalsByYear.map((p, i) => {
-              const barHeight = (p.seats / maxTotal) * height;
+              const barHeight = (p.seats / maxTotal) * (height - topPad);
               const x = i * barSlot + barSlot * 0.15;
               const barW = barSlot * 0.7;
               return (
@@ -181,7 +185,7 @@ const SpecialtyStats = ({ vagas }) => {
                     // collapse to a sliver -- stacks a little taller than
                     // `height` when several segments are that small, which
                     // is an acceptable trade for staying visible/labelable.
-                    const segHeight = Math.max(8, (seats / maxTotal) * height);
+                    const segHeight = Math.max(8, (seats / maxTotal) * (height - topPad));
                     yCursor -= segHeight;
                     const segY = yCursor;
                     return (

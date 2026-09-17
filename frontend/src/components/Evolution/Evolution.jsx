@@ -29,11 +29,15 @@ const Evolution = ({ points }) => {
   const maxSeats = Math.max(...allPoints.map((p) => p.seats), 1);
   const width = 480;
   const height = 160;
+  // Leave headroom above the tallest bar for its value label -- without it,
+  // the max-value bar's label sits right at (or above) the chart's own top
+  // edge and overlaps whatever is rendered above the chart.
+  const topPad = 16;
   const barWidth = width / allPoints.length;
 
   const centers = allPoints.map((p, i) => ({
     x: i * barWidth + barWidth / 2,
-    y: height - (p.seats / maxSeats) * height,
+    y: height - (p.seats / maxSeats) * (height - topPad),
   }));
   const trendPath = centers.map((c, i) => `${i === 0 ? 'M' : 'L'}${c.x},${c.y}`).join(' ');
 
@@ -44,7 +48,7 @@ const Evolution = ({ points }) => {
       <svg viewBox={`0 0 ${width} ${height + 24}`} className={styles.chart}>
         {allPoints.map((p, i) => {
           const isPredicted = predicted && i === allPoints.length - 1;
-          const barHeight = (p.seats / maxSeats) * height;
+          const barHeight = (p.seats / maxSeats) * (height - topPad);
           const x = i * barWidth + barWidth * 0.15;
           const barW = barWidth * 0.7;
           return (

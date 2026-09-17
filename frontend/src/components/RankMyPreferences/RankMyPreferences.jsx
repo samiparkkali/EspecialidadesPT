@@ -558,8 +558,19 @@ const RankMyPreferences = ({ vagas, colocados }) => {
                   ? institutionsByCombo.get(baseComboKey(p.specialty, p.regionKey)) || []
                   : [];
                 const canBreakdown = isRegionOnly && regionInstitutions.length > 0;
+                // Single-institution region: reuse the likelihood panel's pct for
+                // this exact preference (same underlying quantity) instead of an
+                // independently-simulated number that can differ by chance.
+                const likelihoodPct =
+                  regionInstitutions.length === 1
+                    ? likelihood?.perOption.find(
+                        (opt) => opt.specialty === p.specialty && opt.regionKey === p.regionKey && !opt.institution
+                      )
+                    : null;
                 const breakdown = canBreakdown
-                  ? institutionBreakdown(p.specialty, p.regionKey, myNumber, clampedOffset, maxOrdering)
+                  ? institutionBreakdown(p.specialty, p.regionKey, myNumber, clampedOffset, maxOrdering).map((inst) =>
+                      likelihoodPct?.hasData ? { ...inst, pct: likelihoodPct.pct } : inst
+                    )
                   : null;
                 return (
                   <li key={key} className={styles.rankListItemWrap}>
@@ -638,8 +649,15 @@ const RankMyPreferences = ({ vagas, colocados }) => {
                   ? institutionsByCombo.get(baseComboKey(opt.specialty, opt.regionKey)) || []
                   : [];
                 const canBreakdown = !opt.institution && regionInstitutions.length > 0;
+                // A single-institution region *is* that institution -- reuse the
+                // region row's own pct (from the shared computeLikelihood trials)
+                // instead of re-simulating independently below, which used to
+                // show two different percentages for the exact same thing purely
+                // from separate Math.random() draws.
                 const breakdown = canBreakdown
-                  ? institutionBreakdown(opt.specialty, opt.regionKey, myNumber, clampedOffset, maxOrdering)
+                  ? institutionBreakdown(opt.specialty, opt.regionKey, myNumber, clampedOffset, maxOrdering).map(
+                      (inst) => (regionInstitutions.length === 1 && opt.hasData ? { ...inst, pct: opt.pct } : inst)
+                    )
                   : null;
                 return (
                   <li key={key} className={styles.rankListItemWrap}>
