@@ -32,6 +32,7 @@ from extract_vagas_labeled import parse_vagas_labeled
 from institution_mapping import canonicalize
 from region_mapping import region_key
 from specialty_mapping import canonicalize_specialty
+from vagas_corrections import apply_corrections
 
 ROOT = Path(__file__).resolve().parent.parent
 RAW_VAGAS = ROOT / "data" / "raw" / "vagas"
@@ -53,8 +54,7 @@ def _has_native_text(path: Path) -> bool:
     return with_text >= max(2, sample // 2)
 
 
-# MGF's 4th nesting level leaks clinic/institution names as fake "specialty"
-# rows; these prefixes catch them regardless of specialty-name wording drift.
+# Catches MGF's 4th-nesting-level clinic names that leak in as fake "specialty" rows.
 _INSTITUTION_PREFIXES = (
     "USF ", "UCSP ", "ULS ", "ULS", "ACES ", "Aces ", "Administra",
     "Hospital ", "Centro ", "Instituto ", "Unidade ", "Regi",
@@ -65,15 +65,10 @@ def _looks_like_institution(text: str) -> bool:
     return text.strip().startswith(_INSTITUTION_PREFIXES) or len(text.strip()) <= 3
 
 
-# vagas-2025.pdf lays specialties out in two columns; PyMuPDF's linear text
-# order interleaves them, so a brand-new specialty's own heading can land
-# mid-table inside the PREVIOUS specialty's institution list and get
-# misread as an institution row (e.g. "Medicina de Urgência e Emergência"
-# showing up as an "institution" under IMUNO-HEMOTERAPIA/Madeira). Since
-# this was its first year, it also has zero colocados placements yet, so it
-# never makes known_specialties on its own -- add it explicitly so any row
-# correctly parsed for it isn't rejected, and so the stray row below can be
-# detected and dropped instead of shown as a fake institution.
+# vagas-2025.pdf's two-column layout can misread this new specialty's own
+# heading as a fake institution row inside the previous specialty's list;
+# since it's brand new it has no colocados placements yet to auto-populate
+# known_specialties, so it's added explicitly to avoid rejecting it.
 EXTRA_KNOWN_SPECIALTIES = {"Medicina de Urgência e Emergência"}
 
 
@@ -91,21 +86,15 @@ def _leaf_rows_only(parsed_rows: list) -> list:
         total_rows = [r for r in group if not r.region]
         total = total_rows[0].seats if total_rows else None
 
-        # MGF nests one level deeper (region -> ULS -> USF clinic), and the
-        # source PDF prints BOTH a ULS's own subtotal row (e.g. "ULS Alto
-        # Ave, E. P. E.") and its child USF rows (e.g. "ULS Alto Ave-USF
-        # Afonso Henriques") tagged at the same "institution" level -- summing
-        # them naively double-counts every ULS's seats. A ULS subtotal row's
-        # name is always an exact prefix of its own children's names (up to
-        # the "-"), so it can be dropped by name alone, leaving only the true
-        # USF leaf rows.
+        # MGF's PDF rows print both a ULS's own subtotal row and its child USF
+        # rows at the same "institution" level; summing both double-counts
+        # seats, so subtotal rows (an exact name prefix of their children's,
+        # up to "-") are dropped below, keeping only true USF leaf rows.
         is_mgf = "geral e familiar" in (group[0].specialty or "").lower()
 
         with_institution = [r for r in group if r.institution]
         if is_mgf:
-            # A ULS's own subtotal row carries a legal-entity suffix its USF
-            # children don't ("ULS Alto Ave, E. P. E." vs. "ULS Alto Ave-USF
-            # ..."), so strip that before checking the prefix relationship.
+            # Strip the subtotal row's legal-entity suffix before prefix-matching.
             def _uls_base(name: str) -> str:
                 return re.sub(r",?\s*E\.?\s*P\.?\s*E\.?\s*$", "", name, flags=re.IGNORECASE).strip()
 
@@ -128,8 +117,7 @@ def _leaf_rows_only(parsed_rows: list) -> list:
             out.extend(second)
             continue
 
-        # Nothing reconciled -- prefer the printed total, else best-effort
-        # the most granular breakdown (never the raw mixed-level group).
+        # Prefer the printed total, else the most granular breakdown available.
         out.extend(total_rows or with_institution or with_region)
     return out
 
@@ -140,7 +128,9 @@ def build_vagas(known_specialties: set[str] | None = None) -> list[dict]:
     """
     rows: list[dict] = []
     rejected: set[str] = set()
-    for path in sorted(RAW_VAGAS.glob("*.pdf")):
+    # Declarações de Retificação are small hand-typed diffs (vagas_corrections.py),
+    # not full tables in the regular per-year format -- skip parsing them here.
+    for path in sorted(p for p in RAW_VAGAS.glob("*.pdf") if not p.name.lower().startswith("declaracao")):
         year = int(re.search(r"20\d\d", path.name).group(0))
         if not _has_native_text(path):
             print(f"skip {path.name}: scanned PDF, no OCR-based parser yet")
@@ -163,10 +153,8 @@ def build_vagas(known_specialties: set[str] | None = None) -> list[dict]:
                 rejected.add(r.specialty)
                 continue
             if r.institution and canonicalize_specialty(r.institution) in (known_specialties or set()) | EXTRA_KNOWN_SPECIALTIES:
-                # A stray specialty heading leaked into the institution column
-                # (see EXTRA_KNOWN_SPECIALTIES) -- the seat count on this row
-                # can't be reliably attributed to either specialty, so drop it
-                # rather than ship a fake institution.
+                # Stray specialty heading leaked into the institution column; drop
+                # rather than ship a fake institution (see EXTRA_KNOWN_SPECIALTIES).
                 rejected.add(f"{r.specialty} / {r.institution} (stray heading)")
                 continue
             file_rows.append(
@@ -205,15 +193,14 @@ def build_vagas(known_specialties: set[str] | None = None) -> list[dict]:
     if rejected:
         print(f"rejected {len(rejected)} non-specialty labels (MGF nesting artifacts): "
               f"{sorted(rejected)[:5]}{'...' if len(rejected) > 5 else ''}")
-    return rows
+    return apply_corrections(rows)
 
 
 def build_colocados() -> list[dict]:
     rows: list[dict] = []
     ocr_paths: list[Path] = []
-    # Native-text files that found 0 rows via the ruled-table parser -- some
-    # years' colocados PDFs list records as plain sequential text lines with
-    # no table grid, which page.find_tables() can't see at all.
+    # Native-text files with 0 rows: some years list records as plain text
+    # lines with no table grid, invisible to page.find_tables().
     native_no_table: list[Path] = []
 
     for path in sorted(RAW_COLOC.glob("*.pdf")):
@@ -242,14 +229,11 @@ def build_colocados() -> list[dict]:
             )
         print(f"{path.name}: {len(parsed)} rows")
 
-    # Full institution recovery only works when OCR preserves reading order
-    # (true for 2025, not 2024); other years get specialty + ordering number only.
+    # Full institution recovery needs OCR to preserve reading order (2025 only).
     FULL_ROW_OCR_YEARS = {2025}
-    # 2024's original OCR flattened every page into one text blob, losing
-    # institution entirely (see extract_colocados_ocr.py's docstring). Re-OCR'd
-    # with docling's table-structure detection enabled (backend/ocr_convert.py's
-    # do_table_structure flag), it comes back as real per-row markdown tables --
-    # parsed by extract_colocados_ocr_table.py, no anchor/position guessing.
+    # 2024's OCR flattened pages into one blob, losing institution (see
+    # extract_colocados_ocr.py); re-OCR'd with table-structure detection gives
+    # real per-row markdown tables instead (extract_colocados_ocr_table.py).
     TABLE_STRUCTURE_OCR_YEARS = {2024}
 
     known_specialties = {r["specialty"] for r in rows}
@@ -320,10 +304,8 @@ def build_colocados() -> list[dict]:
             )
         print(f"{path.name}: {len(parsed)} rows from OCR (specialty + ordering number only)")
 
-    # Re-run with the specialty-anchor approach now that other years have
-    # populated known_specialties -- needed for full CANONICAL_MAP coverage,
-    # since a lone year's own vocabulary alone (e.g. only the ~13 specialties
-    # with spelling variants) would miss most uniformly-spelled specialties.
+    # Re-run with other years' known_specialties now populated -- a single
+    # year's own vocabulary alone would miss most uniformly-spelled specialties.
     known_specialties = {r["specialty"] for r in rows} or known_specialties
     for path in native_no_table:
         year = int(re.search(r"20\d\d", path.name).group(0))

@@ -14,9 +14,8 @@ ROOT = Path(__file__).resolve().parent.parent
 VAGAS_CSV = ROOT / "data" / "processed" / "vagas.csv"
 COLOCADOS_CSV = ROOT / "data" / "processed" / "colocados.csv"
 
-# Confirmed-bad specialty values from earlier bugs (MGF's extra nesting
-# level leaking clinic/town names as fake specialties) -- regression guard,
-# not exhaustive, see check_names.py for open-ended review.
+# Confirmed-bad values from earlier MGF-nesting bugs; regression guard, not
+# exhaustive (see check_names.py for open-ended review).
 KNOWN_BAD_SPECIALTIES = {
     "MONCORVO", "CACÉM", "MADEIR", "QUEIRÓS", "SANTIAGO", "CARAVELA",
     "DUNAS", "INFESTA", "OCEANOS", "LAGOA", "MOGADOURO", "EANES",
@@ -29,12 +28,9 @@ VALID_REGION_KEYS = {
     "acores", "madeira",
 }
 
-# Each vagas-YYYY.pdf prints its own grand total ("Total Geral" 2023-2025,
-# "Total Nacional" 2021-2022) -- the one number in the whole pipeline that's
-# ACSS's own, not derived. Summing vagas.csv's seats per year must land
-# within a few seats of it (institution-vs-region rounding, not a parser
-# regression) -- see notebooks/01_qa_seats_by_year_location.ipynb and
-# build_dataset.py's _leaf_rows_only for why this used to be off by ~3x.
+# ACSS's own printed grand total per year (not derived) -- vagas.csv's summed
+# seats must land within tolerance (see build_dataset.py's _leaf_rows_only
+# for the old ~3x double-count bug this guards against).
 OFFICIAL_TOTAL_SEATS = {2021: 1938, 2022: 2054, 2023: 2248, 2024: 2165, 2025: 2330}
 OFFICIAL_TOTAL_TOLERANCE = 200
 

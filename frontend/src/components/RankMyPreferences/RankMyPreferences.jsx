@@ -30,9 +30,8 @@ const comboKey = (specialty, regionKey, institution = '') => `${specialty}|||${r
 const baseComboKey = (specialty, regionKey) => `${specialty}|||${regionKey}`;
 const cutoffKey = (specialty, institution) => `${specialty}|||${institution}`;
 
-// Picks one item at random, weighted by weightFn(item) -- used to pick which
-// institution a region-only preference "means" for a given trial, bigger
-// institutions (more seats) more likely.
+// Weighted random pick -- used to pick which institution a region-only
+// preference "means" for a trial, bigger institutions more likely.
 const pickWeighted = (items, weightFn) => {
   const total = items.reduce((sum, item) => sum + weightFn(item), 0);
   let r = Math.random() * total;
@@ -43,15 +42,10 @@ const pickWeighted = (items, weightFn) => {
   return items[items.length - 1];
 };
 
-// Draws one plausible cutoff for an option from its own historical years
-// (each year's actual last-in ordering number), rather than assuming every
-// nearby Golden Ticket Number wants exactly the same ranking as you -- that
-// assumption used to make popular first choices look impossible even when
-// the real cutoff history was far above your number. A region-only
-// preference first weight-picks an institution by seats, then samples that
-// institution's own history. Returns null when there's no historical data
-// at all for the option, so it can be treated as unknown rather than
-// silently "never enters".
+// Draws one plausible cutoff from an option's own historical years, rather
+// than assuming every year wants the same ranking (that used to make popular
+// first choices look impossible). Region-only: weight-picks an institution
+// by seats first, then samples its history. null means no historical data.
 const sampleCutoff = (cutoffsByKey, institutionsByCombo, specialty, regionKey, institution) => {
   if (institution) {
     const entries = cutoffsByKey.get(cutoffKey(specialty, institution));
@@ -69,16 +63,10 @@ const sampleCutoff = (cutoffsByKey, institutionsByCombo, specialty, regionKey, i
   return entries[Math.floor(Math.random() * entries.length)][1];
 };
 
-// Runs the full likelihood estimate: each trial draws your own number as
-// myNumber +/- the spread (your own uncertainty about where you'll land) and
-// samples a plausible cutoff for every ranked option from that option's own
-// year-to-year history. Each option's displayed pct is its own MARGINAL odds
-// of admitting your drawn number -- independent of the other options on your
-// list -- so a safe, low-cutoff option near the bottom of your list still
-// correctly shows near-100%, even though in practice you'd already have been
-// placed into an easier, higher-ranked option first. That "already placed
-// higher up" effect is instead summarized once, in notPlacedPct: the chance
-// your number fails to clear EVERY ranked option's cutoff in the same trial.
+// Each option's pct is its own MARGINAL odds of admitting your drawn number,
+// independent of other options -- so a safe low-cutoff option near the
+// bottom still shows near-100% even though you'd likely be placed earlier.
+// That "placed earlier" effect is summarized once in notPlacedPct instead.
 const computeLikelihood = (preferences, cutoffsByKey, institutionsByCombo, myNumber, offset, maxOrdering) => {
   const perOptionHits = new Array(preferences.length).fill(0);
   const perOptionTrials = new Array(preferences.length).fill(0);
@@ -204,10 +192,8 @@ const RankMyPreferences = ({ vagas, colocados }) => {
     return result;
   }, [colocados]);
 
-  // Compact cutoff context for one option: a specific institution looks up its
-  // own history; a whole-region entry shows the range across its institutions
-  // for the most recent year any of them has data, since one region combo can
-  // straddle very different cutoffs.
+  // Region entries show a range across institutions (which can straddle very
+  // different cutoffs) rather than one specific institution's history.
   const cutoffSummary = (specialty, regionKey, institution) => {
     if (institution) {
       const entries = cutoffsByKey.get(cutoffKey(specialty, institution));
@@ -228,11 +214,8 @@ const RankMyPreferences = ({ vagas, colocados }) => {
     return min === max ? `${year}: ${min}` : `${year}: ${min}–${max}`;
   };
 
-  // Per-institution breakdown for a whole-region ranked entry: rather than one
-  // aggregated range/likelihood for the region, shows each institution's own
-  // historical cutoffs (and, once a Golden Ticket Number is entered, that
-  // institution's own standalone odds), so a region-only pick can be judged
-  // hospital by hospital instead of as a single blended figure.
+  // Per-institution cutoffs/odds for a region entry, judged hospital by
+  // hospital instead of as one blended figure.
   const institutionBreakdown = (specialty, regionKey, myNum, offset, maxOrd) => {
     const institutions = institutionsByCombo.get(baseComboKey(specialty, regionKey)) || [];
     return institutions.map((inst) => {

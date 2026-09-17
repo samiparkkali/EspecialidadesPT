@@ -1,24 +1,15 @@
 """Maps raw institution names to a canonical identity for cross-year analysis.
 
-Portugal's SNS reorganized in 2024/2025: hospitals and their local primary
-care clusters (previously separate "Centro Hospitalar X, E.P.E." and
-"ACES Y" entities) were merged into single "ULS <region>" (Unidade Local de
-Saude) entities. Without this mapping, the same physical hospital looks
-like a brand new institution starting in 2025, breaking any seat/placement
-evolution trend across years.
+Portugal's 2024/2025 SNS reorg merged separate hospital + ACES entities into
+single "ULS <region>" entities; without this mapping the same hospital looks
+like a new institution in 2025, breaking cross-year trends.
 
-This is a best-effort, manually curated table built from the institution
-names actually observed in the 2023 and 2025 extracted data (see
-data/processed/vagas.csv) -- it is NOT an exhaustive list of every merger.
-Extend CANONICAL_MAP as more raw name variants turn up (run
-`python backend/institution_mapping.py data/processed/vagas.csv` to list
-any institution names that don't match a known canonical entry, so gaps
-here are visible rather than silently mis-grouped).
+Best-effort table from names observed in data/processed/vagas.csv, not
+exhaustive. Run `python backend/institution_mapping.py data/processed/vagas.csv`
+to list unmapped names and extend CANONICAL_MAP as needed.
 
-The raw name is always kept alongside the canonical one in processed data
-(never overwritten) -- this mapping only adds a `canonical_institution`
-column for grouping/charting, per CLAUDE.md's "keep source columns"
-guidance.
+Raw name is always kept alongside canonical in processed data (never
+overwritten); see CLAUDE.md's "keep source columns" guidance.
 """
 
 from __future__ import annotations
@@ -32,15 +23,10 @@ _OVERRIDES_PATH = Path(__file__).resolve().parent.parent / "data" / "institution
 
 
 def _load_overrides() -> dict[str, str]:
-    """Hand-maintained corrections for near-duplicate canonical names that
-    survive automatic normalization (OCR letter swaps, abbreviations like
-    "IPO" vs. the spelled-out name, etc.) -- see
-    `python backend/find_institution_clusters.py`, which generates/refreshes
-    this file with suggested groupings for a human to fix by hand. Keyed by
-    whatever `canonicalize()` would otherwise return, mapped to the name it
-    should actually resolve to. Missing file / stray columns are fine: this
-    is optional polish on top of the regex-based normalization above.
-    """
+    """Hand-maintained corrections for near-duplicates that survive automatic
+    normalization; see `find_institution_clusters.py`, which generates this
+    file's suggested groupings. Keyed by canonicalize()'s output, mapped to
+    the name it should resolve to. Missing file is fine (optional polish)."""
     overrides: dict[str, str] = {}
     if not _OVERRIDES_PATH.exists():
         return overrides
@@ -58,8 +44,7 @@ _OVERRIDES = _load_overrides()
 # canonical_name -> list of raw-name substrings (case-insensitive) that map to it.
 # Order matters: first match wins, so put more specific patterns first.
 CANONICAL_MAP: dict[str, list[str]] = {
-    # Azores: some years label the same island hospitals by their formal
-    # name, others by the island's name -- same physical placement location.
+    # Azores: some years use the formal name, others the island name -- same location.
     "Hospital da Horta": [
         "Hospital da Horta",
         "Hospital da Horta - Ilha do Faial",
@@ -73,21 +58,14 @@ CANONICAL_MAP: dict[str, list[str]] = {
         "ULS Litoral Alentejano",
         "ULS do Litoral Alentejano",
     ],
-    # These 4 ULS names are already their own post-reform canonical form (no
-    # renamed predecessor to fold in) -- but some rows spell them with a
-    # trailing ", E.P.E." and others without, which the generic fallback
-    # formatting doesn't strip, so without an entry here they'd split into
-    # two distinct canonical names and silently break the Rank My
-    # Preferences cutoff lookup (built from whichever spelling colocados
-    # happens to use) for combos sourced from vagas' other spelling.
+    # These 4 already are their post-reform canonical form, but ", E.P.E."
+    # suffix presence varies by row and isn't stripped by the generic
+    # formatting -- needs an entry or they'd split into two canonical names.
     "ULS Castelo Branco": ["ULS Castelo Branco"],
     "ULS Alto Minho": ["ULS Alto Minho"],
     "ULS Baixo Alentejo": ["ULS Baixo Alentejo"],
     "ULS Nordeste": ["ULS Nordeste"],
-    # Some years drop the "E.P.E."/"do" entirely, which otherwise left this
-    # hospital split into two distinct canonical names across years and broke
-    # the Rank My Preferences cutoff lookup (built from colocados' "with
-    # E.P.E." spelling) for combos sourced from vagas' "without E.P.E." rows.
+    # Some years drop "do" entirely -- would otherwise split into two names.
     "Hospital Divino Espírito Santo de Ponta Delgada": [
         "Hospital Divino Espírito Santo de Ponta Delgada",
         "Hospital do Divino Espírito Santo de Ponta Delgada",
@@ -99,10 +77,7 @@ CANONICAL_MAP: dict[str, list[str]] = {
     ],
     "ULS Santo António": [
         "Centro Hospitalar Universitário de Santo António",
-        # "Centro Hospitalar Universitário do Porto" (CHUP) was this same
-        # entity's name before its ~2019 rename to Santo António -- some
-        # years' PDFs (and even some rows within a single-year PDF) still use
-        # the older name.
+        # Pre-~2019 name for this same entity (CHUP), still used in some PDFs.
         "Centro Hospitalar Universitário do Porto",
         "ULS Santo António",
         "ULS de Santo António",
@@ -118,11 +93,9 @@ CANONICAL_MAP: dict[str, list[str]] = {
         "ULS São José",
         "ULS de São José",
     ],
-    # Not to be confused with the distinct "ACES de Lisboa Ocidental e
-    # Oeiras" primary-care cluster, which never merged into this ULS -- the
-    # patterns below are anchored to "Centro Hospitalar"/"ULS" so they can't
-    # accidentally swallow the ACES entity via a bare "Lisboa Ocidental"
-    # substring match.
+    # Anchored to "Centro Hospitalar"/"ULS" so a bare "Lisboa Ocidental"
+    # substring can't swallow the distinct, never-merged "ACES de Lisboa
+    # Ocidental e Oeiras" primary-care cluster.
     "ULS Lisboa Ocidental": [
         "Centro Hospitalar de Lisboa Ocidental",
         "ULS Lisboa Ocidental",
@@ -140,7 +113,7 @@ CANONICAL_MAP: dict[str, list[str]] = {
     ],
     "ULS Gaia/Espinho": [
         "Centro Hospitalar Vila Nova de Gaia/Espinho",
-        # OCR misreads "Gaia" as "Gala" ("i" -> "l") on several pages.
+        # OCR "i" -> "l" typo: "Gala" for "Gaia".
         "Centro Hospitalar Vila Nova de Gala/Espinho",
         "ULS Gaia/Espinho",
         "ULS de Gaia/Espinho",
@@ -175,17 +148,11 @@ CANONICAL_MAP: dict[str, list[str]] = {
         "ULS Matosinhos",
         "ULS de Matosinhos",
     ],
-    # Madeira's autonomous region never went through the mainland's 2023 ULS
-    # reorg. SESARAM ("Serviço de Saúde da Região Autónoma da Madeira") is the
-    # whole regional health service, not one physical location, so it's kept
-    # as its own separate (unmapped) entity rather than used as a canonical
-    # name here. The actual hospital is canonicalized under "Hospital Central
-    # do Funchal" -- "Hospital Nélio Mendonça"/"Hospital Dr. Nélio Mendonça"
-    # is the same building/service under its older official name.
-    # Not a bare "SESARAM" pattern -- that would also swallow the distinct
-    # "SESARAM - Unidade de Saúde Pública de <X>" clinic entries and the
-    # "Sesaram (vaga protocolada - <other institution>)" cross-region
-    # placement rows, both of which must stay separate.
+    # Madeira never went through the mainland's ULS reorg; SESARAM is the
+    # whole regional service (kept unmapped), not this specific hospital, so
+    # it's excluded here (handled separately below as an exact match) to
+    # avoid swallowing the distinct SESARAM clinic/cross-region-placement rows.
+    # "Nélio Mendonça"/"Dr. Nélio Mendonça" is this hospital's older name.
     "Hospital Central do Funchal": [
         "Hospital Central do Funchal",
         "Hospital Central do Fxnchal",
@@ -197,17 +164,12 @@ CANONICAL_MAP: dict[str, list[str]] = {
     "ULS Guarda": [
         "ULS Guarda",
         "ULS da Guarda",
-        # OCR misreads the leading "U" as "I" ("Inidade" for "Unidade") on
-        # some pages -- _ULS_FULL_NAME's regex requires the real "Unidade"
-        # spelling, so this typo needs its own pattern.
+        # OCR "U"->"I" typo ("Inidade"); _ULS_FULL_NAME only matches real "Unidade".
         "Inidade Local de Saúde da Guarda",
     ],
-    # The following entries all come from Decreto-Lei n.º 102/2023's Art. 1,
-    # which named every pre-2024 hospital/ACES pair merged into each new ULS
-    # -- see EXTRACTION_FINDINGS.md. The general "ULS X"/"Unidade Local de
-    # Saúde de/da/do X" pattern above (_ULS_FULL_NAME) already unifies both
-    # spellings of the post-reorg name from a single "ULS X" pattern, so only
-    # the pre-reorg hospital name needs listing here as well.
+    # Pre-2024 hospital/ACES pairs per Decreto-Lei n.º 102/2023 Art. 1 (see
+    # EXTRACTION_FINDINGS.md); only the pre-reorg name needs listing since
+    # _ULS_FULL_NAME already unifies both post-reorg spellings.
     "ULS Alto Ave": ["Hospital da Senhora da Oliveira", "ULS Alto Ave"],
     "ULS Barcelos/Esposende": [
         "Hospital de Santa Maria Maior",
@@ -221,9 +183,7 @@ CANONICAL_MAP: dict[str, list[str]] = {
     ],
     "ULS Médio Ave": ["Centro Hospitalar do Médio Ave", "ULS Médio Ave"],
     "ULS Entre Douro e Vouga": [
-        # Raw text spells this "Entre-Douro" (no "o") far more often than the
-        # decree's official "Entre o Douro" -- the hyphen-insensitive
-        # _match_key handles the hyphen/space variants, so both need listing.
+        # "Entre Douro" (common) vs. the decree's official "Entre o Douro".
         "Entre Douro e Vouga",
         "Entre o Douro e Vouga",
     ],
@@ -254,15 +214,11 @@ CANONICAL_MAP: dict[str, list[str]] = {
     ],
     "ULS Amadora/Sintra": [
         "Hospital Professor Doutor Fernando Fonseca",
-        # The dominant raw spelling abbreviates to "Prof - Dr" (or "Prof, Dr")
-        # rather than spelling out "Professor Doutor" -- without this pattern
-        # every pre-2025 placement fell through unmapped, leaving this ULS
-        # with zero cutoff history before the year it took the ULS name.
+        # Dominant raw spelling abbreviates "Professor Doutor" to "Prof Dr".
         "Hospital Prof Dr Fernando Fonseca",
         "Hospital Fernando Fonseca",
-        # "Fernando Fonseca" alone catches OCR-garbled title prefixes
-        # ("Frof", "Or" for "Dr") that break the word-contiguity needed for
-        # the patterns above to match as a substring.
+        # Catches OCR-garbled title prefixes ("Frof", "Or") that break the
+        # word-contiguity the patterns above need to match.
         "Fernando Fonseca",
         "Fernaodo Fonseca",
         "ULS Amadora/Sintra",
@@ -290,21 +246,14 @@ CANONICAL_MAP: dict[str, list[str]] = {
         "ULS Alto Alentejo",
     ],
     "ULS Alentejo Central": [
-        # Not "Hospital Divino Espírito Santo de Ponta Delgada" -- a
-        # different hospital in the Açores that never merged into this ULS.
+        # Distinct from "Hospital Divino Espírito Santo de Ponta Delgada" (Açores).
         "Espírito Santo de Évora",
         "ULS Alentejo Central",
     ],
-    # The 3 IPO ("Instituto Português de Oncologia ... Francisco Gentil")
-    # sites appear under their full name, an abbreviated "IPO <city>" form,
-    # and a long tail of OCR letter-swaps on "Instituto Português" itself
-    # (e.g. "Lxstituto", "Ostituto") -- matching on "Oncologia de/do <city>
-    # Francisco Gentil" (a substring OCR rarely corrupts, since it isn't at
-    # a line's leading edge) plus the "IPO <city>" abbreviation catches
-    # every variant without needing to enumerate each typo.
+    # Matching "Oncologia de/do <city> Francisco Gentil" + "IPO <city>" covers
+    # every OCR typo variant of "Instituto Português" without enumerating them.
     "IPO Coimbra": [
-        # Some years print a comma before "Francisco Gentil" ("Oncologia de
-        # Coimbra, Francisco Gentil"), others don't -- both need matching.
+        # Comma before "Francisco Gentil" varies by year -- both needed.
         "Oncologia de Coimbra, Francisco Gentil",
         "Oncologia de Coimbra Francisco Gentil",
         "IPO Coimbra",
@@ -320,9 +269,7 @@ CANONICAL_MAP: dict[str, list[str]] = {
         "Oncologia do Parto Francisco Gentil",
         "IPO Porto",
     ],
-    # Private CUF hospitals: some rows say "Hospital CUF X", others drop
-    # "Hospital" or reverse the order to "CUF X Hospital" -- "hospital"
-    # always comes first in the canonical name when it's part of the name.
+    # Private CUF hospitals: rows drop "Hospital" or reorder to "CUF X Hospital".
     "Hospital CUF Descobertas": [
         "CUF Descobertas",
     ],
@@ -330,17 +277,12 @@ CANONICAL_MAP: dict[str, list[str]] = {
         "CUF Porto",
     ],
     "Hospital CUF Tejo": [
-        # CUF Tejo absorbed the older "CUF Infante Santo" site/name.
+        # Absorbed the older "CUF Infante Santo" site/name.
         "CUF Infante Santo",
         "CUF Tejo",
     ],
-    # Same public-private-partnership hospital, named after: its official
-    # name ("Hospital de Cascais Dr. José de Almeida"), the "HPP" operator
-    # that used to run it, and the generic "Hospital Público-Privado de
-    # Cascais" descriptor -- plus an OCR "L" for "H" typo on "HPP".
-    # Only the Lisboa site appears in this dataset (no "Lusíadas Porto" rows),
-    # so unifying on the bare group name is safe here -- there's no risk of
-    # merging two distinct Lusíadas hospitals together.
+    # Only the Lisboa site appears in this dataset, so unifying on the bare
+    # group name is safe (no risk of merging distinct Lusíadas hospitals).
     "Hospital Lusíadas": [
         "Hospital dos Lusíadas",
         "Hospital Lusíadas Lisboa",
@@ -349,58 +291,36 @@ CANONICAL_MAP: dict[str, list[str]] = {
     "Hospital de Cascais Dr. José de Almeida": [
         "Hospital de Cascais Dr",
         "HPP Hospital de Cascais",
-        "LPP Hospital de Cascais",
+        "LPP Hospital de Cascais",  # OCR "L" for "H"
         "Hospital Público Privado de Cascais",
         "Hospital Público-Privado de Cascais",
     ],
 }
 
 
-# MGF (and a few other specialties) nest one level deeper than
-# hospital/ULS -- down to the individual primary-care clinic (USF/UCSP/USP/
-# UCC). The clinic itself survived the 2024 ACES->ULS reorganization
-# unchanged; only its parent org's name changed (e.g. "ACES Arco Ribeirinho
-# - USF Ribeirinha" -> "ULS Arco Ribeirinho - USF Ribeirinha"). Matching on
-# the clinic name alone reconciles these across the reorg instead of losing
-# their whole placement history at the rename.
+# MGF etc. nest down to the individual clinic (USF/UCSP/USP/UCC), which
+# survived the 2024 ACES->ULS reorg unchanged even though its parent org's
+# name changed -- matching on the clinic name alone reconciles across that.
 _CLINIC_SUFFIX = re.compile(r"\b(USF|UCSP|USP|UCC)\s+.+$", re.IGNORECASE)
-# 2022 colocados.csv has a font/cmap glitch (the same one that corrupts some
-# ordering numbers -- see extract_colocados_native_full.py) that renders the
-# "U" of "USF" as a stray digit (observed: 0SF, 3SF, 4SF, 5SF). Left
-# unhandled, each corrupted row falls through to the raw-uppercase fallback
-# as its own bogus one-off "institution" instead of reconciling with every
-# correctly-spelled "USF <clinic>" elsewhere.
+# 2022 colocados.csv font/cmap glitch renders "USF"'s leading "U" as a stray
+# digit (0SF, 3SF, 4SF, 5SF) -- see extract_colocados_native_full.py.
 _CLINIC_SUFFIX_GLITCHED = re.compile(r"\b[0-9]SF\s+.+$", re.IGNORECASE)
 
-# "E.P.E." (the standard "public entity" suffix on almost every hospital
-# name) shows up with every spacing/punctuation/OCR variant imaginable
-# across years -- ", E.P.E.", ", E. P. E", ", E.P.E," and the OCR glitch
-# "EFE." (P misread as F) -- each treated as a distinct institution unless
-# collapsed to one spelling before dedup/grouping.
+# ", E.P.E." varies in spacing/punctuation across years, plus the OCR glitch
+# "EFE." (P misread as F).
 _EPE_SUFFIX = re.compile(r",?\s*E\.?\s*P\.?\s*E\.?\s*[.,]?\s*$", re.IGNORECASE)
 _EFE_SUFFIX = re.compile(r",?\s*EFE\.?\s*$", re.IGNORECASE)
-# A compound place name's separating dash also varies by year/OCR pass:
-# plain hyphen, en/em dash, or a stray "." used as a word separator
-# ("TONDELA . VISEU" for "TONDELA - VISEU") -- normalize all of these to a
-# single " - " so the same institution doesn't fork into several canonical
-# entries over pure punctuation noise. The period form only ever separates
-# two multi-letter words (never single-letter abbreviations like "E.P.E."),
-# so requiring 2+ word characters on each side keeps those safe.
+# Compound place-name dash varies: hyphen, en/em dash, or a stray "." used as
+# a word separator ("TONDELA . VISEU"). Period form requires 2+ word chars on
+# each side so it never matches single-letter abbreviations like "E.P.E.".
 _DASH_VARIANTS = re.compile(r"\s*[‐-―]\s*")
 _PERIOD_AS_DASH = re.compile(r"(?<=\w{2})\s*\.\s*(?=\w{2})")
 
-# "ULS <X>" is just the abbreviation for "Unidade Local de Saúde de/da/do
-# <X>" -- both spellings show up across years/PDFs for the same entity (e.g.
-# "ULS Guarda, EPE" vs. "Unidade Local de Saúde da Guarda"). Collapsing the
-# spelled-out form down to "ULS" means a single CANONICAL_MAP entry (or even
-# no entry at all, for ULSs that never had a distinct pre-reorg name) covers
-# both, instead of needing every ULS's full name enumerated as its own
-# pattern.
+# Collapses "Unidade Local de Saúde de/da/do <X>" to "ULS <X>" so both
+# spellings match a single CANONICAL_MAP pattern.
 _ULS_FULL_NAME = re.compile(r"Unidade\s+Local\s+de\s+Sa[uú]de\s*(?:de|da|do)?\s*", re.IGNORECASE)
-# The connecting article ("de"/"da"/"do") between an institution's generic
-# type and its place name drifts year to year in ways a reader never
-# notices ("Centro Hospitalar Universitário de Lisboa Norte" vs "... Lisboa
-# Norte") -- stripped only for matching purposes, never for the display name.
+# Connecting article ("de"/"da"/"do") drifts year to year -- stripped for
+# matching only, never for the display name.
 _ARTICLE = re.compile(r"\b(?:de|da|do)\b\s*", re.IGNORECASE)
 
 
@@ -409,21 +329,15 @@ def _strip_accents(s: str) -> str:
 
 
 def _match_key(text: str) -> str:
-    """Accent-insensitive, article-insensitive, ULS-form-insensitive,
-    hyphen-insensitive key used only to decide whether a CANONICAL_MAP
-    pattern matches a raw name -- never used as the displayed canonical name
-    itself (compound names' real hyphens, e.g. "Trás-os-Montes", are
-    unaffected since both sides of a comparison go through this same
-    normalization)."""
+    """Normalization key for matching only, never used as the display name
+    (real hyphens like "Trás-os-Montes" are unaffected since both sides of a
+    comparison go through the same normalization)."""
     text = _strip_accents(text)
     text = _ULS_FULL_NAME.sub("ULS ", text)
     text = _ARTICLE.sub("", text)
     text = _DASH_VARIANTS.sub(" ", text)
     text = text.replace("-", " ")
-    # Titles like "Prof." / "Dr." are sometimes written with periods
-    # ("Hospital Prof. Dr. Fernando Fonseca") and sometimes with dashes
-    # instead ("Hospital Prof - Dr - Fernando Fonseca") -- both must reduce
-    # to the same key so a single CANONICAL_MAP pattern matches either.
+    # "Prof./Dr." vs "Prof - Dr -" must reduce to the same key.
     text = text.replace(".", " ")
     return re.sub(r"\s+", " ", text).strip().upper()
 
@@ -451,16 +365,11 @@ def canonicalize(raw_institution: str) -> str:
     # doesn't split one institution into two distinct canonical names.
     normalized = re.sub(r"\s*/\s*", "/", raw_institution)
 
-    # A clinic (USF/UCSP/USP/UCC) suffix names the actual leaf institution --
-    # check this BEFORE CANONICAL_MAP, otherwise a parent ULS/hospital that
-    # happens to have its own CANONICAL_MAP entry (e.g. "ULS Matosinhos")
-    # would swallow "ULS Matosinhos - USF Foo" into the parent's canonical
-    # name, silently losing the clinic-level granularity that MGF depends on.
+    # Checked before CANONICAL_MAP so a parent ULS/hospital entry (e.g. "ULS
+    # Matosinhos") doesn't swallow "ULS Matosinhos - USF Foo" and lose the
+    # clinic-level granularity MGF depends on.
     if (clinic_match := _CLINIC_SUFFIX.search(normalized)) is not None:
-        # Some rows name the clinic in brackets after the parent entity, e.g.
-        # "ULS de Lisboa Ocidental, E.P.E. [USP Cascais]" -- the suffix regex
-        # greedily matches to end of string, so strip a trailing "]" left over
-        # from that bracket.
+        # Strip trailing "]" from rows like "... [USP Cascais]" (greedy match).
         clinic_name = clinic_match.group(0).rstrip("]").rstrip()
         result = _normalize_formatting(clinic_name).upper()
         return _OVERRIDES.get(result, result)
@@ -470,18 +379,14 @@ def canonicalize(raw_institution: str) -> str:
 
     match_text = _match_key(normalized)
 
-    # A bare "SESARAM" (no clinic/protocol suffix) names Madeira's hospital
-    # seat itself, same physical placement as "Hospital Nélio Mendonça"/
-    # "Hospital Central do Funchal" -- but "SESARAM - Unidade de Saúde
-    # Pública de X" and "Sesaram (vaga Protocolada - X)" are genuinely
-    # different, so this only fires on an exact match, not a substring one.
+    # Bare "SESARAM" names the hospital seat itself; exact match only, since
+    # "SESARAM - Unidade de Saúde Pública de X" and "Sesaram (vaga
+    # Protocolada - X)" are genuinely different entities.
     if match_text == "SESARAM":
         return "HOSPITAL CENTRAL DO FUNCHAL"
 
-    # 2025's colocados OCR truncated "SESARAM - Unidade de Saúde Pública de
-    # São Vicente"/"...do Funchal" down to just the tail after the dash --
-    # exact-match only (see e.g. "USF São Vicente", a real, different clinic,
-    # which must not be swept in here).
+    # 2025 colocados OCR truncated these to just the tail after the dash --
+    # exact match only, so it can't sweep in "USF São Vicente" (a real, different clinic).
     if match_text == "SAO VICENTE":
         return "SESARAM - UNIDADE DE SAÚDE PÚBLICA DE SÃO VICENTE"
     if match_text == "FUNCHAL":

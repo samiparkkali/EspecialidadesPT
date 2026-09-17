@@ -15,9 +15,7 @@ def test_canonicalize_maps_epe_hospital_to_uls():
 
 
 def test_canonicalize_is_uppercase():
-    # Roman numerals in raw names (e.g. "Tâmega Ii") must read as the
-    # numeral, not get title-cased into something misleading -- plain
-    # .upper() handles that correctly.
+    # Roman numerals (e.g. "Tâmega Ii") must read as "II", not title-cased.
     assert canonicalize("some clinic Ii") == "SOME CLINIC II"
 
 

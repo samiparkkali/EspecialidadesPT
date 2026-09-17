@@ -24,10 +24,8 @@ VAGAS_CSV = ROOT / "data" / "processed" / "vagas.csv"
 COLOCADOS_CSV = ROOT / "data" / "processed" / "colocados.csv"
 OUT_PATH = ROOT / "data" / "processed" / "QA_FLAGS.md"
 
-# Words that show up in real institution names often enough that their
-# absence is the actual suspicious signal for a *long* name -- but a
-# *short* name (a handful of words, no legal-entity suffix) is more likely
-# a fragment leaked by extraction than a genuine institution.
+# Absence of these is only suspicious for a *long* name; a short name lacking
+# one is more likely a leaked fragment than a genuine institution.
 _LEGAL_SUFFIXES = ("E.P.E", "I.P.", "ULS", "ARS", "SESARAM", "SRS")
 
 
@@ -69,9 +67,8 @@ def main() -> None:
     vagas_rows = _read_csv(VAGAS_CSV)
     colocados_rows = _read_csv(COLOCADOS_CSV)
 
-    # colocados.csv is parsed via PyMuPDF's table finder (reliable, no
-    # indent-hierarchy guessing), so its specialty column is the trustworthy
-    # reference set -- anything in vagas.csv not matching it is suspicious.
+    # colocados.csv's specialty column is the trustworthy reference (parsed
+    # via table finder, no indent-hierarchy guessing).
     known_specialties = {r["specialty"] for r in colocados_rows}
 
     inst_flags = flag_institutions(vagas_rows) + flag_institutions(colocados_rows)
