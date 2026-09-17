@@ -107,9 +107,9 @@ const SpecialtyStats = ({ vagas }) => {
   }
 
   const maxTotal = Math.max(...totalsByYear.map((p) => p.seats), 1);
-  const height = 200;
-  const barSlot = 56;
-  const width = Math.max(480, barSlot * totalsByYear.length);
+  const width = 480;
+  const height = 160;
+  const barSlot = width / Math.max(1, totalsByYear.length);
 
   return (
     <>
@@ -132,7 +132,7 @@ const SpecialtyStats = ({ vagas }) => {
         <div className="card">
           <h2 className={styles.chartTitle}>Total seats per year: {specialty}</h2>
           <div className={styles.chartScroll} data-h-scroll>
-          <svg viewBox={`0 0 ${width} ${height + 24}`} style={{ width: `${width}px` }} className={styles.chart}>
+          <svg viewBox={`0 0 ${width} ${height + 24}`} className={styles.chart}>
             {totalsByYear.map((p, i) => {
               const barHeight = (p.seats / maxTotal) * height;
               const x = i * barSlot + barSlot * 0.15;
@@ -166,7 +166,7 @@ const SpecialtyStats = ({ vagas }) => {
           <h2 className={styles.chartTitle}>Breakdown by region: {specialty}</h2>
           <p className="subtitle">Each bar is one year's seats, stacked by region.</p>
           <div className={styles.chartScroll} data-h-scroll>
-          <svg viewBox={`0 0 ${width} ${height + 24}`} style={{ width: `${width}px` }} className={styles.chart}>
+          <svg viewBox={`0 0 ${width} ${height + 24}`} className={styles.chart}>
             {years.map((year, i) => {
               const perRegion = byYearAndRegion.get(year);
               const x = i * barSlot + barSlot * 0.15;

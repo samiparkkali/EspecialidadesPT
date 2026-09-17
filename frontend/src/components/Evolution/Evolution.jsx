@@ -27,9 +27,8 @@ const Evolution = ({ points }) => {
   const allPoints = predicted ? [...points, predicted] : points;
 
   const maxSeats = Math.max(...allPoints.map((p) => p.seats), 1);
-  const height = 200;
-  const barSlot = 56;
-  const width = Math.max(480, barSlot * allPoints.length);
+  const width = 480;
+  const height = 160;
   const barWidth = width / allPoints.length;
 
   const centers = allPoints.map((p, i) => ({
@@ -42,7 +41,7 @@ const Evolution = ({ points }) => {
     <div className="card">
       <h2 className={styles.title}>Seats by year</h2>
       <div className={styles.chartScroll} data-h-scroll>
-      <svg viewBox={`0 0 ${width} ${height + 24}`} style={{ width: `${width}px` }} className={styles.chart}>
+      <svg viewBox={`0 0 ${width} ${height + 24}`} className={styles.chart}>
         {allPoints.map((p, i) => {
           const isPredicted = predicted && i === allPoints.length - 1;
           const barHeight = (p.seats / maxSeats) * height;

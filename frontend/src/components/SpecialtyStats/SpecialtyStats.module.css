@@ -4,6 +4,7 @@
 }
 
 .chart {
+  width: 100%;
   height: auto;
   display: block;
   overflow: visible;
@@ -12,6 +13,18 @@
 .chartScroll {
   overflow-x: auto;
   overflow-y: hidden;
+}
+
+/* Mobile only: the chart's viewBox is a fixed 480x160, which on a wide
+   desktop card fills nicely at width:100%, but on a narrow phone shrinks
+   bars/text below readable size. Force a bigger minimum render width here
+   so the chart scales up and scrolls horizontally instead. Desktop is
+   untouched. */
+@media (max-width: 640px) {
+  .chart {
+    width: auto;
+    min-width: 640px;
+  }
 }
 
 .bar {
