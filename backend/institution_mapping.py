@@ -189,6 +189,8 @@ CANONICAL_MAP: dict[str, list[str]] = {
     "Hospital Central do Funchal": [
         "Hospital Central do Funchal",
         "Hospital Central do Fxnchal",
+        "Hospital Cefitral do Funchal",
+        "lospital Central do Funchal",
         "Hospital Nélio Mendonça",
         "Hospital Dr. Nélio Mendonça",
     ],
@@ -427,6 +429,15 @@ def canonicalize(raw_institution: str) -> str:
     # different, so this only fires on an exact match, not a substring one.
     if match_text == "SESARAM":
         return "HOSPITAL CENTRAL DO FUNCHAL"
+
+    # 2025's colocados OCR truncated "SESARAM - Unidade de Saúde Pública de
+    # São Vicente"/"...do Funchal" down to just the tail after the dash --
+    # exact-match only (see e.g. "USF São Vicente", a real, different clinic,
+    # which must not be swept in here).
+    if match_text == "SAO VICENTE":
+        return "SESARAM - UNIDADE DE SAÚDE PÚBLICA DE SÃO VICENTE"
+    if match_text == "FUNCHAL":
+        return "SESARAM - UNIDADE DE SAÚDE PÚBLICA DO FUNCHAL"
 
     for canonical, patterns in CANONICAL_MAP.items():
         for pattern in patterns:
