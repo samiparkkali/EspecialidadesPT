@@ -237,7 +237,10 @@ CANONICAL_MAP: dict[str, list[str]] = {
     "ULS Médio Tejo": ["Centro Hospitalar do Médio Tejo", "ULS Médio Tejo"],
     "ULS Arrábida": ["Centro Hospitalar de Setúbal", "ULS Arrábida"],
     # Private hospital in Vila Nova de Gaia (Norte), rebranded under Luz
-    # Saúde -- distinct from the public "ULS Arrábida" (Setúbal) above.
+    # Saúde -- distinct from the public "ULS Arrábida" (Setúbal) above, and
+    # from the flagship "Hospital da Luz" (Lisboa) below. Listed first so
+    # its more specific "Arrábida" suffix wins before the bare-name entry's
+    # substring check could otherwise swallow it.
     "Hospital da Luz Arrábida": ["Hospital da Arrábida", "Hospital da Luz Arrábida"],
     "ULS Arco Ribeirinho": [
         "Centro Hospitalar Barreiro",
@@ -299,6 +302,48 @@ CANONICAL_MAP: dict[str, list[str]] = {
         "Hospital Público Privado de Cascais",
         "Hospital Público-Privado de Cascais",
     ],
+    # Flagship Lisboa site; most years print it bare, 2024 adds "Lisboa".
+    # Character-similar enough to "Hospital Lusíadas" (same padding words,
+    # short overall length) that the fuzzy fallback below would otherwise
+    # misfire on it -- needs an explicit substring pattern instead.
+    "Hospital da Luz": ["Hospital da Luz Lisboa", "Hosp. da Luz", "Hospital da Luz"],
+    # Instituto Nacional de Medicina Legal e Ciências Forenses -- its 3
+    # regional delegations print under at least 4 different naming
+    # conventions across years ("Instituto Nacional Medicina Legal", the
+    # newer "Instituto Nacional de Medicina Legal", the acronym "INMLCF",
+    # or a bare "Delegação do X" with the parent org dropped entirely), on
+    # top of which OCR frequently corrupts "Delegação"'s accented letters --
+    # never unified before, so each variant silently became its own
+    # institution instead of accumulating the delegation's placements.
+    # Centro's Aveiro sub-office listed first: it's a genuinely separate
+    # office from the bare "Delegação do Centro", so needs to claim its
+    # more specific pattern before the generic one below can swallow it.
+    "INML Delegação do Centro (Aveiro)": [
+        "Instituto Nacional Medicina Legal - Delegação do Centro (Aveiro)",
+        "Delegação do Centro (Aveiro)",
+    ],
+    "INML Delegação do Norte": [
+        "Instituto Nacional Medicina Legal - Delegação do Norte",
+        "Instituto Nacional de Medicina Legal - Delegação Norte",
+        "INMLCF Delegação Norte",
+        "Delegação do Norte",
+        "Delegação Norte",
+    ],
+    "INML Delegação do Centro": [
+        "Instituto Nacional Medicina Legal - Delegação do Centro",
+        "Instituto Nacional de Medicina Legal - Delegação Centro",
+        "INMLCF Delegação Centro",
+        "Delegação do Centro",
+    ],
+    # Portugal's INMLCF headquarters this delegation in Lisboa, so "Delegação
+    # Lisboa" (INMLCF's own acronym-era naming) and "Delegação do Sul" (the
+    # official delegation name) are the same office, not two.
+    "INML Delegação do Sul": [
+        "Instituto Nacional Medicina Legal - Delegação do Sul",
+        "INMLCF Delegação Lisboa",
+        "Delegação do Sul",
+        "Delegação Lisboa",
+    ],
 }
 
 
@@ -337,6 +382,13 @@ def _match_key(text: str) -> str:
     (real hyphens like "Trás-os-Montes" are unaffected since both sides of a
     comparison go through the same normalization)."""
     text = _strip_accents(text)
+    # Strip before the period-stripping below turns ", E.P.E." into a
+    # trailing "E P E" that no longer matches either suffix regex -- without
+    # this, "SESARAM" and "SESARAM, E.P.E." produce different keys and the
+    # exact-match special case for bare "SESARAM" (see below) never fires
+    # for rows that print the full corporate suffix.
+    text = _EFE_SUFFIX.sub("", text)
+    text = _EPE_SUFFIX.sub("", text)
     text = _ULS_FULL_NAME.sub("ULS ", text)
     text = _ARTICLE.sub("", text)
     text = _DASH_VARIANTS.sub(" ", text)
@@ -415,14 +467,29 @@ def canonicalize(raw_institution: str) -> str:
     # `python find_institution_clusters.py`-style audit in EXTRACTION_FINDINGS.md)
     # -- below that, short/generic fragments ("HOSPITAL" alone, "PENA")
     # start fuzzy-matching to the wrong hospital.
+    #
+    # Ratio alone isn't enough: "Hospital da Luz" (a real, distinct hospital
+    # with no CANONICAL_MAP entry of its own) scores 0.84 against "Hospital
+    # Lusíadas" purely from sharing "HOSPITAL"/"LISBOA" padding around a
+    # completely different name -- a false merge, not OCR noise. OCR
+    # corruption instead leaves one long contiguous run of the original
+    # name intact (only a middle chunk garbled), so also requiring the
+    # longest common substring to cover most of the pattern's length
+    # rejects same-shape-different-name collisions like that one while
+    # still passing every verified true positive (>=0.66 there vs 0.46
+    # for the Luz/Lusíadas collision).
     if len(match_text) >= 15:
-        best_canonical, best_ratio = None, 0.0
+        best_canonical, best_ratio, best_block_frac = None, 0.0, 0.0
         for canonical, patterns in CANONICAL_MAP.items():
             for pattern in patterns:
-                ratio = difflib.SequenceMatcher(None, match_text, _match_key(pattern)).ratio()
+                pattern_key = _match_key(pattern)
+                sm = difflib.SequenceMatcher(None, match_text, pattern_key)
+                ratio = sm.ratio()
                 if ratio > best_ratio:
+                    block = sm.find_longest_match(0, len(match_text), 0, len(pattern_key))
                     best_canonical, best_ratio = canonical, ratio
-        if best_ratio >= 0.80:
+                    best_block_frac = block.size / len(pattern_key) if pattern_key else 0
+        if best_ratio >= 0.80 and best_block_frac >= 0.60:
             return _OVERRIDES.get(best_canonical.upper(), best_canonical.upper())
 
     result = _normalize_formatting(normalized).upper()
