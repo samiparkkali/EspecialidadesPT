@@ -260,6 +260,11 @@ CANONICAL_MAP: dict[str, list[str]] = {
         # with zero cutoff history before the year it took the ULS name.
         "Hospital Prof Dr Fernando Fonseca",
         "Hospital Fernando Fonseca",
+        # "Fernando Fonseca" alone catches OCR-garbled title prefixes
+        # ("Frof", "Or" for "Dr") that break the word-contiguity needed for
+        # the patterns above to match as a substring.
+        "Fernando Fonseca",
+        "Fernaodo Fonseca",
         "ULS Amadora/Sintra",
         "ULS Amadora-Sintra",
     ],
@@ -415,6 +420,11 @@ def _match_key(text: str) -> str:
     text = _ARTICLE.sub("", text)
     text = _DASH_VARIANTS.sub(" ", text)
     text = text.replace("-", " ")
+    # Titles like "Prof." / "Dr." are sometimes written with periods
+    # ("Hospital Prof. Dr. Fernando Fonseca") and sometimes with dashes
+    # instead ("Hospital Prof - Dr - Fernando Fonseca") -- both must reduce
+    # to the same key so a single CANONICAL_MAP pattern matches either.
+    text = text.replace(".", " ")
     return re.sub(r"\s+", " ", text).strip().upper()
 
 
