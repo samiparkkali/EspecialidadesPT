@@ -8,26 +8,58 @@ regular table format.
 from __future__ import annotations
 
 from institution_mapping import canonicalize
+from log_utils import get_logger
+
+logger = get_logger(__name__)
+
+
+def _warn_on_match_count(fn_name: str, matched: int, year: int, specialty: str, institution: str) -> None:
+    if matched == 0:
+        logger.warning(
+            "vagas_corrections.%s: no row matched year=%s specialty=%r institution=%r -- "
+            "institution/specialty text may have shifted since this correction was written, "
+            "so it silently did nothing",
+            fn_name, year, specialty, institution,
+        )
+    elif matched > 1:
+        logger.warning(
+            "vagas_corrections.%s: %d rows matched year=%s specialty=%r institution=%r "
+            "(expected exactly 1) -- applied to all of them, double-check this is intended",
+            fn_name, matched, year, specialty, institution,
+        )
+    else:
+        logger.info(
+            "vagas_corrections.%s: applied to year=%s specialty=%r institution=%r",
+            fn_name, year, specialty, institution,
+        )
 
 
 def _rename(rows: list[dict], year: int, specialty: str, old_institution: str, new_institution: str) -> None:
+    matched = 0
     for r in rows:
         if r["year"] == year and r["specialty"] == specialty and r["institution"] == old_institution:
             r["institution"] = new_institution
             r["canonical_institution"] = canonicalize(new_institution)
+            matched += 1
+    _warn_on_match_count("_rename", matched, year, specialty, old_institution)
 
 
 def _set_seats(rows: list[dict], year: int, specialty: str, institution: str, seats: int) -> None:
+    matched = 0
     for r in rows:
         if r["year"] == year and r["specialty"] == specialty and r["institution"] == institution:
             r["seats"] = seats
+            matched += 1
+    _warn_on_match_count("_set_seats", matched, year, specialty, institution)
 
 
 def _remove(rows: list[dict], year: int, specialty: str, institution: str) -> None:
+    before = len(rows)
     rows[:] = [
         r for r in rows
         if not (r["year"] == year and r["specialty"] == specialty and r["institution"] == institution)
     ]
+    _warn_on_match_count("_remove", before - len(rows), year, specialty, institution)
 
 
 def apply_corrections(rows: list[dict]) -> list[dict]:

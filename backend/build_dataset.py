@@ -33,6 +33,7 @@ from institution_mapping import canonicalize
 from region_mapping import region_key
 from specialty_mapping import canonicalize_specialty
 from vagas_corrections import apply_corrections
+from colocados_corrections import apply_corrections as apply_colocados_corrections
 
 ROOT = Path(__file__).resolve().parent.parent
 RAW_VAGAS = ROOT / "data" / "raw" / "vagas"
@@ -326,6 +327,7 @@ def build_colocados() -> list[dict]:
             )
         print(f"{path.name}: {len(full_parsed)} rows (specialty-anchor parse, no ruled table)")
 
+    rows = apply_colocados_corrections(rows)
     rows.sort(key=lambda r: (int(r["year"]), int(r["ordering_number"])))
     return rows
 
