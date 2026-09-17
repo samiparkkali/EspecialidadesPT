@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useDataset } from './hooks/useDataset';
 import Tabs from './components/Tabs/Tabs';
 import Filters from './components/Filters/Filters';
@@ -31,6 +31,34 @@ function App() {
   useEffect(() => {
     document.title = SITE_TITLE;
   }, []);
+
+  // Swipe left/right between tabs on touch devices -- ignored if the touch
+  // started on something horizontally scrollable itself (a chart or table),
+  // so swiping to scroll those doesn't also flip the tab.
+  const touchStart = useRef(null);
+  const handleTouchStart = (e) => {
+    const target = e.target.closest('[data-h-scroll]');
+    if (target && target.scrollWidth > target.clientWidth) {
+      touchStart.current = null;
+      return;
+    }
+    const t = e.touches[0];
+    touchStart.current = { x: t.clientX, y: t.clientY };
+  };
+  const handleTouchEnd = (e) => {
+    const start = touchStart.current;
+    touchStart.current = null;
+    if (!start) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - start.x;
+    const dy = t.clientY - start.y;
+    if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+    const idx = TABS.findIndex((tab) => tab.id === activeTab);
+    if (idx === -1) return;
+    const nextIdx = dx < 0 ? idx + 1 : idx - 1;
+    if (nextIdx < 0 || nextIdx >= TABS.length) return;
+    setActiveTab(TABS[nextIdx].id);
+  };
 
   const specialties = useMemo(() => {
     if (!vagas) return [];
@@ -65,7 +93,7 @@ function App() {
     const byYear = new Map();
     for (const r of filtered) {
       const year = Number(r.year);
-      byYear.set(year, (byYear.get(year) || 0) + Number(r.seats));
+      byYear.set(year, (byYear.get(year) || 0) + (Number(r.seats) || 0));
     }
     return Array.from(byYear.entries())
       .map(([year, seats]) => ({ year, seats }))
@@ -92,6 +120,7 @@ function App() {
 
       <Tabs tabs={TABS} active={activeTab} onChange={setActiveTab} />
 
+      <div onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
       {activeTab === 'overview' && (
         <>
           <Filters
@@ -125,6 +154,7 @@ function App() {
       {activeTab === 'specialty-stats' && <SpecialtyStats vagas={vagas} />}
 
       {activeTab === 'rank-preferences' && <RankMyPreferences vagas={vagas} colocados={colocados} />}
+      </div>
 
       <footer className="site-footer">
         &copy; {new Date().getFullYear()} All rights reserved. Engineered by{' '}

@@ -19,7 +19,7 @@ const SpecialtyStats = ({ vagas }) => {
   const totalsByYear = useMemo(
     () => years.map((year) => ({
       year,
-      seats: rows.filter((r) => Number(r.year) === year).reduce((sum, r) => sum + Number(r.seats), 0),
+      seats: rows.filter((r) => Number(r.year) === year).reduce((sum, r) => sum + (Number(r.seats) || 0), 0),
     })),
     [rows, years]
   );
@@ -36,7 +36,7 @@ const SpecialtyStats = ({ vagas }) => {
       for (const regionKey of regionKeys) {
         const seats = rows
           .filter((r) => Number(r.year) === year && (r.region_key || '') === regionKey)
-          .reduce((sum, r) => sum + Number(r.seats), 0);
+          .reduce((sum, r) => sum + (Number(r.seats) || 0), 0);
         perRegion.set(regionKey, seats);
       }
       map.set(year, perRegion);
@@ -74,7 +74,7 @@ const SpecialtyStats = ({ vagas }) => {
       if (!byName.has(name)) byName.set(name, { byYear: new Map(), regionKey: '', regionYear: -Infinity });
       const entry = byName.get(name);
       const year = Number(r.year);
-      entry.byYear.set(year, (entry.byYear.get(year) || 0) + Number(r.seats));
+      entry.byYear.set(year, (entry.byYear.get(year) || 0) + (Number(r.seats) || 0));
       if (year >= entry.regionYear) {
         entry.regionKey = r.region_key || '';
         entry.regionYear = year;
@@ -107,9 +107,9 @@ const SpecialtyStats = ({ vagas }) => {
   }
 
   const maxTotal = Math.max(...totalsByYear.map((p) => p.seats), 1);
-  const width = 480;
-  const height = 160;
-  const barSlot = width / Math.max(1, totalsByYear.length);
+  const height = 200;
+  const barSlot = 56;
+  const width = Math.max(480, barSlot * totalsByYear.length);
 
   return (
     <>
@@ -131,7 +131,8 @@ const SpecialtyStats = ({ vagas }) => {
       {specialty && totalsByYear.length > 0 && (
         <div className="card">
           <h2 className={styles.chartTitle}>Total seats per year: {specialty}</h2>
-          <svg viewBox={`0 0 ${width} ${height + 24}`} className={styles.chart} preserveAspectRatio="xMidYMid meet">
+          <div className={styles.chartScroll} data-h-scroll>
+          <svg viewBox={`0 0 ${width} ${height + 24}`} style={{ width: `${width}px` }} className={styles.chart}>
             {totalsByYear.map((p, i) => {
               const barHeight = (p.seats / maxTotal) * height;
               const x = i * barSlot + barSlot * 0.15;
@@ -156,6 +157,7 @@ const SpecialtyStats = ({ vagas }) => {
               );
             })}
           </svg>
+          </div>
         </div>
       )}
 
@@ -163,7 +165,8 @@ const SpecialtyStats = ({ vagas }) => {
         <div className="card">
           <h2 className={styles.chartTitle}>Breakdown by region: {specialty}</h2>
           <p className="subtitle">Each bar is one year's seats, stacked by region.</p>
-          <svg viewBox={`0 0 ${width} ${height + 24}`} className={styles.chart} preserveAspectRatio="xMidYMid meet">
+          <div className={styles.chartScroll} data-h-scroll>
+          <svg viewBox={`0 0 ${width} ${height + 24}`} style={{ width: `${width}px` }} className={styles.chart}>
             {years.map((year, i) => {
               const perRegion = byYearAndRegion.get(year);
               const x = i * barSlot + barSlot * 0.15;
@@ -204,6 +207,7 @@ const SpecialtyStats = ({ vagas }) => {
               );
             })}
           </svg>
+          </div>
           <ul className={styles.legend}>
             {regionKeys.map((regionKey) => (
               <li key={regionKey || 'unmapped'} className={styles.legendItem}>
@@ -236,7 +240,7 @@ const SpecialtyStats = ({ vagas }) => {
                   {group.totalSeats} seats in {latestInstitutionYear}
                 </span>
               </summary>
-              <div className={styles.tableScroll}>
+              <div className={styles.tableScroll} data-h-scroll>
                 <table>
                   <thead>
                     <tr>

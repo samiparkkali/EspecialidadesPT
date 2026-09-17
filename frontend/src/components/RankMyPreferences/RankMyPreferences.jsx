@@ -143,10 +143,23 @@ const RankMyPreferences = ({ vagas, colocados }) => {
     const map = new Map();
     for (const r of yearRows) {
       const key = comboKey(r.specialty, r.region_key || '');
-      map.set(key, (map.get(key) || 0) + Number(r.seats));
+      map.set(key, (map.get(key) || 0) + (Number(r.seats) || 0));
     }
     return map;
   }, [yearRows]);
+
+  // Region lookup from ALL years of vagas (not just latestYear) so an
+  // institution that has cutoff history but no seat this year can still be
+  // placed under its right region below, instead of vanishing.
+  const regionByInstitution = useMemo(() => {
+    const map = new Map();
+    for (const r of vagas) {
+      if (!r.institution) continue;
+      const name = r.canonical_institution || r.institution;
+      if (!map.has(name)) map.set(name, r.region_key || '');
+    }
+    return map;
+  }, [vagas]);
 
   // Source of truth for both the institution drill-down and the simulation's seat tracking.
   const institutionsByCombo = useMemo(() => {
@@ -156,8 +169,32 @@ const RankMyPreferences = ({ vagas, colocados }) => {
       if (!map.has(base)) map.set(base, new Map());
       const totals = map.get(base);
       const name = r.canonical_institution || r.institution;
-      totals.set(name, (totals.get(name) || 0) + Number(r.seats));
+      totals.set(name, (totals.get(name) || 0) + (Number(r.seats) || 0));
     }
+
+    // Union in institutions with colocados cutoff history that have no seat
+    // this year (renamed, merged, or simply not offered) -- otherwise their
+    // history is invisible here even though Predict shows it fine, since
+    // Predict reads all years of colocados directly with no seat filter.
+    const seenBySpecialty = new Map();
+    for (const [base, totals] of map) {
+      const specialty = base.split('|||')[0];
+      if (!seenBySpecialty.has(specialty)) seenBySpecialty.set(specialty, new Set());
+      for (const name of totals.keys()) seenBySpecialty.get(specialty).add(name);
+    }
+    for (const row of colocados) {
+      const institution = row.canonical_institution || row.institution;
+      if (!institution) continue;
+      const seen = seenBySpecialty.get(row.specialty);
+      if (seen && seen.has(institution)) continue;
+      const regionKey = regionByInstitution.get(institution) || '';
+      const base = baseComboKey(row.specialty, regionKey);
+      if (!map.has(base)) map.set(base, new Map());
+      if (!map.get(base).has(institution)) map.get(base).set(institution, 0);
+      if (!seenBySpecialty.has(row.specialty)) seenBySpecialty.set(row.specialty, new Set());
+      seenBySpecialty.get(row.specialty).add(institution);
+    }
+
     const result = new Map();
     for (const [base, totals] of map) {
       result.set(
@@ -168,7 +205,7 @@ const RankMyPreferences = ({ vagas, colocados }) => {
       );
     }
     return result;
-  }, [yearRows]);
+  }, [yearRows, colocados, regionByInstitution]);
 
   // Historical "Golden Ticket Number" cutoffs per specialty+institution, every
   // year on record, most recent first -- context for "is this realistic for
@@ -201,6 +238,12 @@ const RankMyPreferences = ({ vagas, colocados }) => {
       return entries.map(([year, n]) => `${year}: ${n}`).join(' · ');
     }
     const institutions = institutionsByCombo.get(baseComboKey(specialty, regionKey)) || [];
+    // A single-institution region has no "range across institutions" to
+    // summarize -- show its full multi-year history instead of collapsing
+    // to just the latest year.
+    if (institutions.length === 1) {
+      return cutoffSummary(specialty, regionKey, institutions[0].institution);
+    }
     const latestPerInstitution = institutions
       .map((inst) => cutoffsByKey.get(cutoffKey(specialty, inst.institution)))
       .filter(Boolean)
@@ -214,11 +257,19 @@ const RankMyPreferences = ({ vagas, colocados }) => {
     return min === max ? `${year}: ${min}` : `${year}: ${min}–${max}`;
   };
 
-  // Per-institution cutoffs/odds for a region entry, judged hospital by
-  // hospital instead of as one blended figure.
+  // Cache per (specialty, region) for the current inputs, since this render
+  // pass's "Your ranking" and "Likelihood" panels both compute the breakdown
+  // for the same region-only preference -- without caching, each call rolled
+  // its own fresh Math.random() trials, so the same institution could show
+  // two different percentages on screen at once (and flicker on any
+  // unrelated re-render).
+  const breakdownCache = useMemo(() => new Map(), [myNumber, clampedOffset, institutionsByCombo, cutoffsByKey, maxOrdering]);
+
   const institutionBreakdown = (specialty, regionKey, myNum, offset, maxOrd) => {
+    const cacheKey = `${specialty}|||${regionKey}`;
+    if (breakdownCache.has(cacheKey)) return breakdownCache.get(cacheKey);
     const institutions = institutionsByCombo.get(baseComboKey(specialty, regionKey)) || [];
-    return institutions.map((inst) => {
+    const result = institutions.map((inst) => {
       const entries = cutoffsByKey.get(cutoffKey(specialty, inst.institution));
       const cutoffText = entries && entries.length ? entries.map(([year, n]) => `${year}: ${n}`).join(' · ') : null;
       let pct = null;
@@ -233,6 +284,8 @@ const RankMyPreferences = ({ vagas, colocados }) => {
       }
       return { institution: inst.institution, seats: inst.seats, cutoffText, pct };
     });
+    breakdownCache.set(cacheKey, result);
+    return result;
   };
 
   const availableCombos = useMemo(() => {
@@ -240,8 +293,10 @@ const RankMyPreferences = ({ vagas, colocados }) => {
     for (const specialty of allSpecialties) {
       for (const regionKey of allRegions) {
         const seats = seatsByCombo.get(comboKey(specialty, regionKey)) || 0;
-        if (seats > 0) {
-          const institutions = institutionsByCombo.get(baseComboKey(specialty, regionKey)) || [];
+        const institutions = institutionsByCombo.get(baseComboKey(specialty, regionKey)) || [];
+        // Keep a combo browsable even with 0 current seats, as long as some
+        // institution in it has real cutoff history (see institutionsByCombo).
+        if (seats > 0 || institutions.length > 0) {
           combos.push({ specialty, regionKey, seats, institutions });
         }
       }
@@ -383,7 +438,11 @@ const RankMyPreferences = ({ vagas, colocados }) => {
             <div className={styles.comboList}>
               {filteredCombos.map((combo) => {
                 const base = baseComboKey(combo.specialty, combo.regionKey);
-                const hasMultipleInstitutions = combo.institutions.length > 1;
+                // Show the expand arrow even for a single institution -- a
+                // region with just one hospital still means one specific
+                // place, and hiding its name behind the region label alone
+                // was confusing (e.g. "Anestesiologia - Açores").
+                const hasMultipleInstitutions = combo.institutions.length > 0;
                 const regionUsed = regionEntryExists(combo.specialty, combo.regionKey);
                 const anyEntryUsed = comboEntries(combo.specialty, combo.regionKey).length > 0;
                 const regionCutoff = cutoffSummary(combo.specialty, combo.regionKey, null);
@@ -498,7 +557,7 @@ const RankMyPreferences = ({ vagas, colocados }) => {
                 const regionInstitutions = isRegionOnly
                   ? institutionsByCombo.get(baseComboKey(p.specialty, p.regionKey)) || []
                   : [];
-                const canBreakdown = isRegionOnly && regionInstitutions.length > 1;
+                const canBreakdown = isRegionOnly && regionInstitutions.length > 0;
                 const breakdown = canBreakdown
                   ? institutionBreakdown(p.specialty, p.regionKey, myNumber, clampedOffset, maxOrdering)
                   : null;
@@ -578,7 +637,7 @@ const RankMyPreferences = ({ vagas, colocados }) => {
                 const regionInstitutions = !opt.institution
                   ? institutionsByCombo.get(baseComboKey(opt.specialty, opt.regionKey)) || []
                   : [];
-                const canBreakdown = !opt.institution && regionInstitutions.length > 1;
+                const canBreakdown = !opt.institution && regionInstitutions.length > 0;
                 const breakdown = canBreakdown
                   ? institutionBreakdown(opt.specialty, opt.regionKey, myNumber, clampedOffset, maxOrdering)
                   : null;

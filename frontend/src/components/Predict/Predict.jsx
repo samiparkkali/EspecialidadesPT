@@ -59,16 +59,10 @@ const Predict = ({ colocados }) => {
         const avgCutoff = Math.round(
           years.reduce((sum, [, c]) => sum + c, 0) / years.length
         );
-        const bestCutoff = Math.max(
-          0,
-          ...eligibleYears.map((y) => y.cutoff),
-          ...closeYears.map((y) => y.cutoff)
-        );
         return {
           specialty: g.specialty,
           institution: g.institution,
           avgCutoff,
-          bestCutoff,
           eligibleYears: eligibleYears.sort((a, b) => a.year - b.year),
           closeYears: closeYears.sort((a, b) => a.year - b.year),
           totalYears: years.length,
@@ -127,7 +121,8 @@ const Predict = ({ colocados }) => {
       )}
 
       {results && (
-        <table style={{ marginTop: '1rem' }}>
+        <div data-h-scroll style={{ overflowX: 'auto', marginTop: '1rem' }}>
+        <table style={{ minWidth: '620px' }}>
           <thead>
             <tr>
               <th>Specialty</th>
@@ -159,6 +154,7 @@ const Predict = ({ colocados }) => {
             )}
           </tbody>
         </table>
+        </div>
       )}
     </div>
   );

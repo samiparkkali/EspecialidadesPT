@@ -1,4 +1,4 @@
-import { useId, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import styles from './SearchableSelect.module.css';
 
 // Own listbox instead of a native <datalist> -- datalist renders as a
@@ -12,6 +12,15 @@ const SearchableSelect = ({ label, options, value, onChange, placeholder, getLab
   const listId = useId();
   const blurTimeout = useRef(null);
   const optionRefs = useRef([]);
+
+  // Clear stale typed text whenever the committed value changes for any
+  // reason other than picking an option here -- e.g. a parent clearing the
+  // selection because it became invalid for a newly-changed sibling filter,
+  // or this component's own clear ("x") button. Without this, the input
+  // keeps showing old typed text that no longer matches the real selection.
+  useEffect(() => {
+    setQuery('');
+  }, [value]);
 
   const filtered = query
     ? options.filter((o) => getLabel(o).toLowerCase().includes(query.toLowerCase())).slice(0, 50)
@@ -76,6 +85,7 @@ const SearchableSelect = ({ label, options, value, onChange, placeholder, getLab
           onChange={(e) => {
             setQuery(e.target.value);
             setActiveIndex(-1);
+            setIsOpen(true);
           }}
           onFocus={handleFocus}
           onBlur={handleBlur}

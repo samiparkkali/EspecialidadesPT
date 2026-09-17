@@ -23,7 +23,7 @@ const ThisYear = ({ vagas }) => {
     const counts = {};
     for (const r of yearRows) {
       if (!r.region_key) continue;
-      counts[r.region_key] = (counts[r.region_key] || 0) + Number(r.seats);
+      counts[r.region_key] = (counts[r.region_key] || 0) + (Number(r.seats) || 0);
     }
     return counts;
   }, [yearRows]);
@@ -36,7 +36,7 @@ const ThisYear = ({ vagas }) => {
   const bySpecialty = useMemo(() => {
     const totals = new Map();
     for (const r of filteredRows) {
-      totals.set(r.specialty, (totals.get(r.specialty) || 0) + Number(r.seats));
+      totals.set(r.specialty, (totals.get(r.specialty) || 0) + (Number(r.seats) || 0));
     }
     return Array.from(totals.entries())
       .map(([specialty, seats]) => ({ specialty, seats }))
@@ -49,7 +49,7 @@ const ThisYear = ({ vagas }) => {
       if (!bySpecialtyMap.has(r.specialty)) bySpecialtyMap.set(r.specialty, new Map());
       const totals = bySpecialtyMap.get(r.specialty);
       const name = r.canonical_institution || r.institution;
-      totals.set(name, (totals.get(name) || 0) + Number(r.seats));
+      totals.set(name, (totals.get(name) || 0) + (Number(r.seats) || 0));
     }
     const result = new Map();
     for (const [specialty, totals] of bySpecialtyMap) {
