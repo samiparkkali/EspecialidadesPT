@@ -15,10 +15,9 @@ reliably:
      number pattern in the document looks like this.
 
 So: scan the flattened text left to right, track whichever known specialty
-name was most recently seen (same technique as
-extract_vagas_totals.py's sequential state machine, for the same reason --
-region/institution words in between never match a specialty name), and
-attribute each ordem/cedula pair encountered to that specialty.
+name was most recently seen (region/institution words in between never
+match a specialty name), and attribute each ordem/cedula pair encountered
+to that specialty.
 
 Institution isn't extracted this way -- OCR word order scrambles which
 institution phrase belongs to which candidate too much to trust

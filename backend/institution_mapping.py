@@ -386,19 +386,21 @@ def canonicalize(raw_institution: str) -> str:
     # "SESARAM - Unidade de Saúde Pública de X" and "Sesaram (vaga
     # Protocolada - X)" are genuinely different entities.
     if match_text == "SESARAM":
-        return "HOSPITAL CENTRAL DO FUNCHAL"
+        return _OVERRIDES.get("HOSPITAL CENTRAL DO FUNCHAL", "HOSPITAL CENTRAL DO FUNCHAL")
 
     # 2025 colocados OCR truncated these to just the tail after the dash --
     # exact match only, so it can't sweep in "USF São Vicente" (a real, different clinic).
     if match_text == "SAO VICENTE":
-        return "SESARAM - UNIDADE DE SAÚDE PÚBLICA DE SÃO VICENTE"
+        result = "SESARAM - UNIDADE DE SAÚDE PÚBLICA DE SÃO VICENTE"
+        return _OVERRIDES.get(result, result)
     if match_text == "FUNCHAL":
-        return "SESARAM - UNIDADE DE SAÚDE PÚBLICA DO FUNCHAL"
+        result = "SESARAM - UNIDADE DE SAÚDE PÚBLICA DO FUNCHAL"
+        return _OVERRIDES.get(result, result)
 
     for canonical, patterns in CANONICAL_MAP.items():
         for pattern in patterns:
             if _match_key(pattern) in match_text:
-                return canonical.upper()
+                return _OVERRIDES.get(canonical.upper(), canonical.upper())
 
     result = _normalize_formatting(normalized).upper()
     return _OVERRIDES.get(result, result)

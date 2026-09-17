@@ -9,11 +9,11 @@ Writes:
 Row/placement counts are read from the already-generated
 data/processed/vagas.csv / colocados.csv (run `make process` first) rather
 than re-deriving them here, so this report always reflects whatever the
-real pipeline (build_dataset.py, including its extract_vagas_totals.py and
+real pipeline (build_dataset.py, including its parse_vagas_labeled and
 extract_colocados_ocr.py fallbacks) actually produced -- a separate,
 simplified re-implementation drifts out of sync with the real one exactly
 when it matters most (e.g. this used to show 0 rows for years that the
-real pipeline successfully falls back to specialty-totals-only for).
+real pipeline successfully falls back to the labeled-format parser for).
 
 There's no single universal "confidence score" here -- native-text
 extraction and OCR are different processes with different failure modes:
@@ -185,9 +185,8 @@ def main() -> None:
         "current mismatches trace to \"Medicina Geral e Familiar\", which "
         "nests one indent level deeper than every other specialty (see "
         "backend/extract_vagas.py's docstring). Years without institution "
-        "detail either used extract_vagas_totals.py's \"Total da "
-        "Especialidade\"-label fallback (vagas) or "
-        "extract_colocados_ocr.py's specialty+ordering-number-only OCR "
+        "detail either used parse_vagas_labeled's label-anchored fallback "
+        "(vagas) or extract_colocados_ocr.py's specialty+ordering-number-only OCR "
         "path (colocacoes) -- see CLAUDE.md and README.md's Known "
         "limitations for which years and why.",
     ]
