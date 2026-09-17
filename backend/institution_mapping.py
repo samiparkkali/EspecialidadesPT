@@ -333,6 +333,14 @@ CANONICAL_MAP: dict[str, list[str]] = {
     # name ("Hospital de Cascais Dr. José de Almeida"), the "HPP" operator
     # that used to run it, and the generic "Hospital Público-Privado de
     # Cascais" descriptor -- plus an OCR "L" for "H" typo on "HPP".
+    # Only the Lisboa site appears in this dataset (no "Lusíadas Porto" rows),
+    # so unifying on the bare group name is safe here -- there's no risk of
+    # merging two distinct Lusíadas hospitals together.
+    "Hospital Lusíadas": [
+        "Hospital dos Lusíadas",
+        "Hospital Lusíadas Lisboa",
+        "Hospital Lusíadas",
+    ],
     "Hospital de Cascais Dr. José de Almeida": [
         "Hospital de Cascais Dr",
         "HPP Hospital de Cascais",
