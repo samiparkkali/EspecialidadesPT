@@ -58,6 +58,21 @@ _OVERRIDES = _load_overrides()
 # canonical_name -> list of raw-name substrings (case-insensitive) that map to it.
 # Order matters: first match wins, so put more specific patterns first.
 CANONICAL_MAP: dict[str, list[str]] = {
+    # Azores: some years label the same island hospitals by their formal
+    # name, others by the island's name -- same physical placement location.
+    "Hospital da Horta": [
+        "Hospital da Horta",
+        "Hospital da Horta - Ilha do Faial",
+    ],
+    "Hospital de Santo Espírito de Angra do Heroísmo": [
+        "Hospital de Santo Espirito de Angra do Heroismo",
+        "Hospital de Santo Espirito da Ilha Terceira",
+        "Hospital Santo Espirito Ilha Terceira",
+    ],
+    "ULS Litoral Alentejano": [
+        "ULS Litoral Alentejano",
+        "ULS do Litoral Alentejano",
+    ],
     "ULS São João": [
         "Centro Hospitalar Universitário de São João",
         "ULS São João",
@@ -142,16 +157,21 @@ CANONICAL_MAP: dict[str, list[str]] = {
         "ULS de Matosinhos",
     ],
     # Madeira's autonomous region never went through the mainland's 2023 ULS
-    # reorg -- SESARAM ("Serviço de Saúde da Região Autónoma da Madeira") is
-    # its own long-standing equivalent, and Hospital Nélio Mendonça is its
-    # main hospital, administratively part of it.
+    # reorg. SESARAM ("Serviço de Saúde da Região Autónoma da Madeira") is the
+    # whole regional health service, not one physical location, so it's kept
+    # as its own separate (unmapped) entity rather than used as a canonical
+    # name here. The actual hospital is canonicalized under "Hospital Nélio
+    # Mendonça" (the name 2025's vagas notice uses) -- "Hospital Central do
+    # Funchal" is the same building/service under its other official name.
     # Not a bare "SESARAM" pattern -- that would also swallow the distinct
     # "SESARAM - Unidade de Saúde Pública de <X>" clinic entries and the
     # "Sesaram (vaga protocolada - <other institution>)" cross-region
     # placement rows, both of which must stay separate.
-    "SESARAM": [
+    "Hospital Nélio Mendonça": [
         "Hospital Nélio Mendonça",
         "Hospital Dr. Nélio Mendonça",
+        "Hospital Central do Funchal",
+        "Hospital Central do Fxnchal",
     ],
     "ULS Guarda": [
         "ULS Guarda",
