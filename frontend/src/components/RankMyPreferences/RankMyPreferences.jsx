@@ -257,14 +257,6 @@ const RankMyPreferences = ({ vagas, colocados }) => {
     return min === max ? `${year}: ${min}` : `${year}: ${min}–${max}`;
   };
 
-  // Cache per (specialty, region) for the current inputs, since this render
-  // pass's "Your ranking" and "Likelihood" panels both compute the breakdown
-  // for the same region-only preference -- without caching, each call rolled
-  // its own fresh Math.random() trials, so the same institution could show
-  // two different percentages on screen at once (and flicker on any
-  // unrelated re-render).
-  const breakdownCache = useMemo(() => new Map(), [myNumber, clampedOffset, institutionsByCombo, cutoffsByKey, maxOrdering]);
-
   const institutionBreakdown = (specialty, regionKey, myNum, offset, maxOrd) => {
     const cacheKey = `${specialty}|||${regionKey}`;
     if (breakdownCache.has(cacheKey)) return breakdownCache.get(cacheKey);
@@ -374,6 +366,14 @@ const RankMyPreferences = ({ vagas, colocados }) => {
 
   const myNumber = Number(myOrderingNumber) > 0 ? Math.min(maxOrdering, Number(myOrderingNumber)) : null;
   const clampedOffset = Math.max(1, Number(spreadOffset) || 200);
+
+  // Cache per (specialty, region) for the current inputs, since this render
+  // pass's "Your ranking" and "Likelihood" panels both compute the breakdown
+  // for the same region-only preference -- without caching, each call rolled
+  // its own fresh Math.random() trials, so the same institution could show
+  // two different percentages on screen at once (and flicker on any
+  // unrelated re-render).
+  const breakdownCache = useMemo(() => new Map(), [myNumber, clampedOffset, institutionsByCombo, cutoffsByKey, maxOrdering]);
 
   // Live odds for the ranking as sketched -- see computeLikelihood above.
   const likelihood = useMemo(() => {
