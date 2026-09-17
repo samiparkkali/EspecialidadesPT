@@ -67,6 +67,11 @@ CANONICAL_MAP: dict[str, list[str]] = {
     "Cirurgia Plástica, Reconstrutiva e Estética": [
         "Cirurgia Plástica Reconstrutiva Estética",
         "Cirurgia Plástica, Reconstrutiva E Estética",
+        # 2021/2022 colocados drop "e Estética" entirely; 2022 also has an
+        # OCR "Cirorgia" typo. 2025 (OCR) drops the comma but keeps "e Estética".
+        "Cirurgia Plástica Reconstrutiva",
+        "Cirorgia Plástica Reconstrutiva",
+        "Cirurgia Plástica Reconstrutiva e Estética",
     ],
     "Oncologia Médica": ["Oncologia Médica"],
     "Radioncologia": ["Radioncologia", "Radioterapia"],

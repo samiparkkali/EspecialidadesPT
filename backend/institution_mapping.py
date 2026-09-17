@@ -235,6 +235,9 @@ CANONICAL_MAP: dict[str, list[str]] = {
     "ULS Oeste": ["Centro Hospitalar do Oeste", "ULS Oeste"],
     "ULS Médio Tejo": ["Centro Hospitalar do Médio Tejo", "ULS Médio Tejo"],
     "ULS Arrábida": ["Centro Hospitalar de Setúbal", "ULS Arrábida"],
+    # Private hospital in Vila Nova de Gaia (Norte), rebranded under Luz
+    # Saúde -- distinct from the public "ULS Arrábida" (Setúbal) above.
+    "Hospital da Luz Arrábida": ["Hospital da Arrábida", "Hospital da Luz Arrábida"],
     "ULS Arco Ribeirinho": [
         "Centro Hospitalar Barreiro",
         "Centro Hospitalar Barreiro-Montijo",
