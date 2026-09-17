@@ -1,17 +1,14 @@
 import { Fragment, useMemo, useState } from 'react';
 import PortugalMap from '../PortugalMap/PortugalMap';
 
-// Shows the latest year currently loaded, region by region. Once the
-// official seat map for the upcoming year is released and parsed into
-// vagas.json (see backend/build_dataset.py), it becomes "latest" here
-// automatically -- no code change needed, just re-running the pipeline.
+// Shows the latest loaded year region by region; a new year becomes
+// "latest" automatically once the pipeline adds it to vagas.json.
 const ThisYear = ({ vagas }) => {
   const [selectedRegion, setSelectedRegion] = useState('');
   const [selectedSpecialty, setSelectedSpecialty] = useState('');
 
-  // Picks the latest year that actually has institution-level rows -- some
-  // years only have specialty totals (see backend/build_dataset.py), which
-  // this map/drill-down view can't do anything with.
+  // Some years only have specialty totals, not institution-level rows this
+  // map/drill-down view needs -- pick the latest year that does.
   const latestYear = useMemo(() => {
     const years = vagas.filter((r) => r.institution).map((r) => Number(r.year));
     return years.length ? Math.max(...years) : null;
@@ -43,7 +40,7 @@ const ThisYear = ({ vagas }) => {
     }
     return Array.from(totals.entries())
       .map(([specialty, seats]) => ({ specialty, seats }))
-      .sort((a, b) => b.seats - a.seats);
+      .sort((a, b) => a.specialty.localeCompare(b.specialty));
   }, [filteredRows]);
 
   const institutionsBySpecialty = useMemo(() => {
@@ -100,7 +97,7 @@ const ThisYear = ({ vagas }) => {
       <div className="card">
         <h2>
           Seats by specialty
-          {selectedRegion ? ` in ${selectedRegion.replace(/-/g, ' ')}` : ' (all of Portugal)'}
+          {selectedRegion ? ` in ${selectedRegion.replace(/-/g, ' ').toUpperCase()}` : ' (all of Portugal)'}
         </h2>
         <p className="subtitle">Click a specialty to see which hospitals offer it here.</p>
         <table>

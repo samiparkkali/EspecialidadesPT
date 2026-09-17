@@ -1,30 +1,13 @@
 """Parse a vagas-YYYY.pdf (seat offers) into structured rows.
 
-These PDFs are native-text (no OCR needed -- confirmed the embedded text
-decodes to correct Unicode, e.g. 'atologica' -> 'Patológica'). The wrinkle
-is that the seat-count column is vertically centered against multi-line
-left-hand entries, so "same text line == same table row" (what a naive
-`pdftotext -layout` read assumes) is wrong -- numbers can land next to the
-wrong row. We match each number to its nearest left-hand row by y-position
-instead (the same fallback docling's TableFormer does internally, just
-without the heavy model -- these are cleanly left-indented text and a
-right-aligned number column, no table-structure model needed).
+Native-text PDFs, but the seat-count column is vertically centered against
+multi-line left-hand entries, so numbers must be matched to their nearest
+row by y-position rather than assumed same-line.
 
-Layout, left column, 3 indent levels (points from page left, calibrated
-per-document since margins can drift slightly between years):
-    Specialty   (indent level 0)
-       Region / ARS   (indent level 1)
-          Institution   (indent level 2)
-Numbers column is right-aligned, x0 far to the right of all three levels.
-
-Known limitation: "Medicina Geral e Familiar" (family medicine) nests one
-level deeper than every other specialty (specialty -> ARS region -> ACES
-sub-region -> individual clinic/USF, hundreds of them), so its
-institution-level rows land one indent level short and get misread as
-extra bogus "specialties". Its specialty-level and region-level totals are
-unaffected. Fixing this needs a 4th indent level special-cased for that one
-specialty -- not done yet, flagged here instead of silently shipping wrong
-per-clinic numbers for family medicine.
+Left column has 3 indent levels (specialty/region/institution), calibrated
+per-document. "Medicina Geral e Familiar" nests one level deeper (ULS ->
+USF sub-clinics); its ULS-subtotal vs. USF-leaf double-counting is resolved
+in build_dataset.py's `_leaf_rows_only`, not here.
 """
 
 from __future__ import annotations
@@ -59,13 +42,15 @@ def _page_lines(page: fitz.Page) -> list[dict]:
     for x0, y0, x1, y1, text, block_no, line_no, word_no in words:
         lines.setdefault((block_no, line_no), []).append((x0, y0, y1, text))
     out = []
-    for ws in lines.values():
+    for (block_no, line_no), ws in lines.items():
         ws.sort(key=lambda w: w[0])
         x0 = ws[0][0]
         y0 = min(w[1] for w in ws)
         y1 = max(w[2] for w in ws)
         text = " ".join(w[3] for w in ws)
-        out.append({"x0": x0, "y0": y0, "y1": y1, "text": text})
+        out.append(
+            {"x0": x0, "y0": y0, "y1": y1, "text": text, "block_no": block_no, "line_no": line_no}
+        )
     out.sort(key=lambda ln: ln["y0"])
     return out
 
@@ -86,7 +71,7 @@ def _calibrate_indent_levels(doc: fitz.Document, sample_pages: int = 6) -> list[
             if line["x0"] > 300:  # skip anything not in the left text column
                 continue
             counts[round(line["x0"])] += 1
-    # Take the 3 most frequent x0s with a non-trivial count, sorted left-to-right.
+    # 3 most frequent x0s with a non-trivial count, left-to-right.
     common = [x0 for x0, n in counts.most_common(8) if n >= 3]
     levels = sorted(common)[:3]
     if len(levels) < 3:
@@ -107,6 +92,7 @@ def parse_vagas_pdf(path: str, year: int) -> list[VagaRow]:
     header_seen = False
 
     for page_no, page in enumerate(doc):
+        last_left_row: dict | None = None  # for merging wrapped left-column entries
         for line in _page_lines(page):
             raw = line["text"].strip()
             if not raw:
@@ -134,16 +120,45 @@ def parse_vagas_pdf(path: str, year: int) -> list[VagaRow]:
             if not text:
                 continue
 
+            # A long specialty/region/institution name can wrap onto a second
+            # PDF line that renders flush against the page's left margin
+            # instead of continuing the entry's own indent -- classifying it
+            # by x0 alone then misreads it as a brand-new (wrong-level) entry,
+            # e.g. a wrapped institution's continuation word being read as a
+            # new specialty header and silently hijacking every row after it.
+            # A whole page's left column can share one PDF text block
+            # (`block_no`), so block_no alone doesn't identify a single row --
+            # but PyMuPDF numbers each row's own line_no 2 apart (0,2,4,...)
+            # while a genuine wrap continuation lands at exactly line_no+1,
+            # so that's the real signal for "this is the same row wrapping".
+            if (
+                line["x0"] < 300
+                and last_left_row is not None
+                and last_left_row["block_no"] == line["block_no"]
+                and line["line_no"] == last_left_row["line_no"] + 1
+            ):
+                last_left_row["text"] = f"{last_left_row['text']} {text}".strip()
+                last_left_row["y1"] = line["y1"]
+                last_left_row["line_no"] = line["line_no"]
+                if inline_number is not None:
+                    number_tokens.append(
+                        {"value": inline_number, "y0": line["y0"], "page": page_no}
+                    )
+                continue
+
             level = _classify_level(line["x0"], levels)
-            text_rows.append(
-                {
-                    "level": level,
-                    "text": text,
-                    "y0": line["y0"],
-                    "y1": line["y1"],
-                    "page": page_no,
-                }
-            )
+            row = {
+                "level": level,
+                "text": text,
+                "y0": line["y0"],
+                "y1": line["y1"],
+                "page": page_no,
+                "block_no": line["block_no"],
+                "line_no": line["line_no"],
+            }
+            text_rows.append(row)
+            if line["x0"] < 300:
+                last_left_row = row
             if inline_number is not None:
                 number_tokens.append(
                     {"value": inline_number, "y0": line["y0"], "page": page_no}

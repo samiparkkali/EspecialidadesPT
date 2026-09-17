@@ -1,9 +1,7 @@
 import { useEffect, useState } from 'react';
 
-// Loads the static JSON exported from data/processed/*.csv (see
-// backend/extract_vagas.py, backend/extract_colocados.py, and the export
-// step in the Makefile). No backend call -- this is what keeps the site
-// deployable as a static GitHub Pages build.
+// Loads static JSON exported from data/processed/*.csv -- no backend call,
+// which is what keeps the site deployable as a static GitHub Pages build.
 export const useDataset = (filename) => {
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);

@@ -1,18 +1,51 @@
 :root {
-  --color-bg: #0c0708;
-  --color-surface: #180f10;
-  --color-border: #33191b;
+  --color-bg: #0a0e1a;
+  --color-surface: #111827;
+  --color-surface-raised: #172038;
+  --color-border: #263153;
+  --color-border-soft: #1b2440;
 
-  --color-text: #f1e9e6;
-  --color-text-muted: #ab9591;
+  --color-text: #eef1fb;
+  --color-text-muted: #8d97b8;
 
-  --color-primary: #7a1f2b;
-  --color-secondary: #c9a24b;
-  --color-secondary-dark: #a17e37;
+  --color-primary: #3462e0;
+  --color-secondary: #ff8f4d;
+  --color-secondary-dark: #d9702f;
+  --color-secondary-soft: #ff8f4d1f;
 
-  --color-shadow: #7a1f2b66;
+  --color-shadow: #3462e055;
   --color-white: #ffffff;
 
-  --radius: 10px;
-  --transition: 0.3s ease;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --shadow-md: 0 8px 24px -8px rgba(0, 0, 0, 0.55);
+  --shadow-glow: 0 0 0 1px var(--color-secondary-soft);
+
+  --radius: 12px;
+  --radius-sm: 8px;
+  --transition: 0.2s ease;
+  --transition-slow: 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.85rem;
+  --font-size-base: 0.95rem;
+  --font-size-lg: 1.15rem;
+  --font-size-xl: 1.4rem;
+
+  /* One fixed hue per health region, shared by the map and every chart. */
+  --region-norte: #e85d9c;
+  --region-centro: #4cc9f0;
+  --region-lisboa-vale-tejo: #f4d35e;
+  --region-alentejo: #8fd694;
+  --region-algarve: #f4615f;
+  --region-acores: #b18cf0;
+  --region-madeira: #4de3c1;
+
+  /* Kept for any chart that just needs N distinct colors, not tied to a region. */
+  --region-color-1: var(--region-norte);
+  --region-color-2: var(--region-centro);
+  --region-color-3: var(--region-lisboa-vale-tejo);
+  --region-color-4: var(--region-alentejo);
+  --region-color-5: var(--region-algarve);
+  --region-color-6: var(--region-acores);
+  --region-color-7: var(--region-madeira);
 }

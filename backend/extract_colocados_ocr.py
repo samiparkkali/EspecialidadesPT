@@ -47,21 +47,33 @@ def parse_ocr_colocados(markdown_path: str, year: int, known_specialties: set[st
 
     from specialty_mapping import CANONICAL_MAP
 
-    # Search for every known spelling variant too (a year's OCR text can
-    # use a different wording than colocados.csv's reference set, e.g.
-    # "Doenças Infeciosas" vs "Doenças Infecciosas"), mapping each match
-    # back to its canonical name. Longest patterns first so e.g. "Medicina
-    # Geral E Familiar" doesn't get shadowed by a shorter substring match.
+    # Also search spelling variants (OCR wording can differ from colocados.csv's
+    # reference set), mapping each back to its canonical name.
     search_patterns: dict[str, str] = {s: s for s in known_specialties}
     for canonical, variants in CANONICAL_MAP.items():
         for variant in variants:
             search_patterns.setdefault(variant, canonical)
 
-    mentions: list[tuple[int, str]] = []
+    # Some known specialty names are literal substrings of others
+    # ("Urologia" inside "Neurologia", "Radiologia" inside
+    # "Neurorradiologia", "Psiquiatria" inside its child specialties) --
+    # resolve overlapping matches to the longest one, not the textually-last
+    # one, or a real "Neurologia" mention gets silently overwritten by the
+    # nested "Urologia" match a few characters later (see
+    # extract_colocados_native_full.py for the full writeup of this bug).
+    raw_mentions: list[tuple[int, int, str]] = []
     for pattern, canonical in sorted(search_patterns.items(), key=lambda kv: len(kv[0]), reverse=True):
         for m in re.finditer(re.escape(pattern), text, re.IGNORECASE):
-            mentions.append((m.start(), canonical))
-    mentions.sort()
+            raw_mentions.append((m.start(), m.end(), canonical))
+    raw_mentions.sort(key=lambda x: (x[0], -(x[1] - x[0])))
+
+    mentions: list[tuple[int, str]] = []
+    last_end = -1
+    for start, end, canonical in raw_mentions:
+        if start < last_end:
+            continue
+        mentions.append((start, canonical))
+        last_end = end
 
     results: list[OcrPlacement] = []
     mention_idx = 0

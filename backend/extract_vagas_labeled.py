@@ -1,23 +1,6 @@
-"""Full institution/region-level parsing for years whose vagas-YYYY.pdf uses
-explicit "Subtotal"/"Total da Especialidade" labels (2021, 2022, 2024 --
-see extract_vagas.py's docstring for why 2023 needs a different, position-
-based approach instead, and extract_vagas_totals.py for the specialty-total
--only version of this that predates this file).
-
-Unlike position-based indent calibration (fragile -- x0 for institution vs.
-region flips between 2021 and 2022, see git history), this only needs two
-structural facts that hold across all three years:
-
-  1. A region header line ("Administração Regional de Saúde X, I.P." /
-     "Região Autónoma X") has no number of its own -- it's a pure section
-     divider, the next line is either an institution or "Subtotal".
-  2. Every institution name, "Subtotal", and "Total da Especialidade" line
-     is immediately followed by its own number on the next line.
-
-So: sequential scan, classify each label line by matching known patterns
-(specialty via the same whitelist-matching extract_vagas_totals.py uses,
-region via region_mapping.region_key, "Subtotal"/"Total da Especialidade"
-via fixed text), and treat anything else as an institution name.
+"""Full institution/region-level parsing for years (2021, 2022, 2024) whose
+PDFs use explicit "Subtotal"/"Total da Especialidade" labels instead of
+extract_vagas.py's position-based indent calibration, which flips between years.
 """
 
 from __future__ import annotations
@@ -32,41 +15,31 @@ import fitz
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 SUBTOTAL_LABEL = re.compile(r"^Subtotal\b", re.IGNORECASE)
-# Anchored to the start of the line -- region_mapping.region_key() does a
-# loose substring search (fine for vagas.csv's already-clean region
-# column), which false-positives here: an institution name like "Centro
-# Hospitalar de Leiria, E.P.E." contains the region pattern word "Centro"
-# and would otherwise get misread as the region header itself.
+# Anchored (not a substring search) so an institution like "Centro Hospitalar
+# de Leiria" doesn't get misread as the region header via its "Centro" prefix.
 REGION_HEADER = re.compile(
     r"^(Administra[çc][ãa]o Regional de Sa[úu]de|Regi[ãa]o Aut[óo]noma)",
     re.IGNORECASE,
 )
-# 2024/2025-style files print bare short region names instead of the full
-# "Administração Regional de Saúde X" phrasing -- exact match only (not a
-# substring search), since e.g. "Centro" alone as a *complete* line is
-# safe (no institution name is ever just that one word).
+# 2024/2025 print bare short region names; exact match only, since no
+# institution name is ever just "Centro" alone.
 SHORT_REGION_NAMES = {
     "norte", "centro", "lisboa e vale do tejo", "alentejo", "algarve",
-    "açores", "acores", "madeira", "ram",
+    "açores", "acores", "raa", "madeira", "ram",
 }
 
 
 def _is_region_header(text: str) -> bool:
     return bool(REGION_HEADER.match(text)) or text.strip().lower() in SHORT_REGION_NAMES
 TOTAL_LABEL = re.compile(r"total\s+da\s+especialidade", re.IGNORECASE)
-# Document-level grand-total rows (a summary section after all specialties,
-# e.g. "Total Nacional", "Total em Áreas Hospitalares") -- not per-
-# specialty data, and their huge numbers get misread as institution seat
-# counts if not excluded explicitly (they don't match TOTAL_LABEL/
-# SUBTOTAL_LABEL/a known specialty/a known region, so without this they
-# fall into the "must be an institution" catch-all).
+# A bare seat count, optionally prefixed by a footnote letter (2022's "a) 8").
+FOOTNOTE_NUM = re.compile(r"^(?:[a-z]\)\s*)?(\d+)$", re.IGNORECASE)
+# Document-level grand-total rows (after all specialties) would otherwise
+# fall into the "must be an institution" catch-all with bogus huge seat counts.
 GRAND_TOTAL_LABEL = re.compile(r"^Total\s+(Nacional|Geral|em\b)", re.IGNORECASE)
 
-# Page header/footer text repeated at every page break (page numbers,
-# "Aviso n.º ...", the date/dispatch line, "SUPLEMENTO ... série", and the
-# column-header row itself) -- left unfiltered, these land mid-table
-# between two real rows and get misread as bogus institutions ("N.º 212"
-# followed by some unrelated number).
+# Repeated page header/footer text that would otherwise land mid-table and
+# get misread as a bogus institution row.
 PAGE_BOILERPLATE = re.compile(
     r"^\d+/\d+$"                                    # page number, e.g. "46/46"
     r"|^\d{1,2}-\d{1,2}-\d{4}$"                      # date, e.g. "31-10-2024"
@@ -76,6 +49,7 @@ PAGE_BOILERPLATE = re.compile(
     r"|^SA[ÚU]DE$"
     r"|^Especialidade/"                              # column header repeat
     r"|^N[úu]mero\s+de\s+[Vv]agas"                   # column header repeat
+    r"|Regional de Sa[úu]de ou Regi[ãa]o Aut[óo]noma" # column header repeat, not a real region
     r"|Administra[çc][ãa]o Central do Sistema",
     re.IGNORECASE,
 )
@@ -97,19 +71,61 @@ def _lines(doc: fitz.Document) -> list[str]:
         by_line: dict[tuple[int, int], list[tuple[float, str]]] = {}
         for x0, y0, x1, y1, text, block_no, line_no, word_no in words:
             by_line.setdefault((block_no, line_no), []).append((x0, text))
+        prev_key: tuple[int, int] | None = None
         for key in sorted(by_line):
             ws = sorted(by_line[key])
             text = " ".join(t for _, t in ws).strip()
-            if text:
+            if not text:
+                continue
+            block_no, line_no = key
+            # A long institution name can wrap onto the very next line_no in
+            # the same block with no seat count of its own (e.g. "...Centro
+            # de Saúde Estreito de Câmara de" / "Lobos") -- merge it back into
+            # the row it continues rather than emitting it as a bogus new row.
+            if (
+                out
+                and prev_key is not None
+                and prev_key[0] == block_no
+                and line_no == prev_key[1] + 1
+                and not re.search(r"\d", text)
+                and not re.search(r"\d", out[-1])
+            ):
+                out[-1] = f"{out[-1]} {text}"
+            else:
                 out.append(text)
+            prev_key = key
     return out
 
 
 def _clean(text: str) -> str:
-    """Strip dot-leaders ("Nome . . . . .") and trailing footnote markers."""
-    text = re.sub(r"\.{2,}.*$", "", text).strip()
-    text = re.sub(r"\s*[a-z]\)\s*$", "", text).strip()
+    """Strip dot-leaders ("Nome . . . . .") and trailing footnote markers.
+    The leader dots are usually space-separated in the extracted text, not
+    consecutive, so the pattern has to allow whitespace between them --
+    otherwise institutions ending in a dot-leader (most of them) keep the
+    leader as part of the "canonical" name and never match their own
+    dot-free spelling from another year."""
+    text = re.sub(r"(?:\.\s*){2,}.*$", "", text).strip()
+    # A real footnote marker is its own token ("... 8 a)"), not the tail of a
+    # word -- "Madeira)" ends in "a)" too and must NOT be treated as one.
+    text = re.sub(r"(?<![a-zA-Z])\s*[a-z]\)\s*$", "", text).strip()
     return text
+
+
+# Header wording drifts year to year in ways that are invisible to a reader
+# but break an exact string match: a comma present one year and absent the
+# next ("Cirurgia Plástica, Reconstrutiva e Estética" vs "... Reconstrutiva
+# e Estética"), or a connector word silently dropped ("Medicina Física e de
+# Reabilitação" vs "Medicina Física Reabilitação"). An unrecognized header
+# doesn't just lose that specialty -- it also gets swallowed as bogus extra
+# rows under whichever specialty came right before it. Normalizing away
+# punctuation and connector words before comparing catches these.
+_SPECIALTY_STOPWORDS = {"E", "DE", "DA", "DO", "DAS", "DOS"}
+
+
+def _normalize_specialty(text: str) -> str:
+    stripped = re.sub(r"[,.]", " ", text.upper())
+    words = [w for w in stripped.split() if w not in _SPECIALTY_STOPWORDS]
+    return " ".join(words)
 
 
 def parse_vagas_labeled(path: str, year: int, known_specialties: set[str]) -> list[LabeledVagaRow]:
@@ -118,10 +134,15 @@ def parse_vagas_labeled(path: str, year: int, known_specialties: set[str]) -> li
     lines = [t for t in lines if t and not PAGE_BOILERPLATE.search(t)]
     from specialty_mapping import CANONICAL_MAP
 
-    known_upper = {s.upper(): s for s in known_specialties}
+    known_norm = {_normalize_specialty(s): s for s in known_specialties}
+    variant_pairs: list[tuple[str, str]] = [(s, s) for s in known_specialties]
     for canonical, variants in CANONICAL_MAP.items():
         for variant in variants:
-            known_upper.setdefault(variant.upper(), canonical)
+            known_norm.setdefault(_normalize_specialty(variant), canonical)
+            variant_pairs.append((variant, canonical))
+    # Longest spelling first, so e.g. "Cirurgia Plástica..." wins over a
+    # shorter specialty name that happens to be its own prefix.
+    variant_pairs.sort(key=lambda vp: len(vp[0]), reverse=True)
 
     rows: list[LabeledVagaRow] = []
     current_specialty: str | None = None
@@ -133,29 +154,54 @@ def parse_vagas_labeled(path: str, year: int, known_specialties: set[str]) -> li
         text = lines[i]
 
         if GRAND_TOTAL_LABEL.match(text):
-            # Ends the per-specialty table; a national/area summary
-            # section follows, not more institutions.
-            break
+            break  # end of per-specialty table, summary section follows
 
-        # A long specialty name can wrap across two physical lines (e.g.
-        # "Psiquiatria" / "Da Infância E Da Adolescência"), and the first
-        # line alone can itself be a *different*, valid, shorter specialty
-        # name -- check the two-line concatenation first so the longer
-        # compound name wins, or a single-line match would silently
-        # misattribute the whole wrapped specialty's data to the shorter
-        # one.
+        # A wrapped specialty name's first line can itself be a different,
+        # valid, shorter specialty -- check the two-line join first.
         if i + 1 < n:
-            combined = f"{text} {lines[i + 1]}".upper()
-            if combined in known_upper:
-                current_specialty = known_upper[combined]
+            combined = _normalize_specialty(f"{text} {lines[i + 1]}")
+            if combined in known_norm:
+                current_specialty = known_norm[combined]
                 current_region = None
                 i += 2
                 continue
 
-        if text.upper() in known_upper:
-            current_specialty = known_upper[text.upper()]
+        norm_text = _normalize_specialty(text)
+        if norm_text in known_norm:
+            current_specialty = known_norm[norm_text]
             current_region = None
             i += 1
+            continue
+
+        # A specialty header is sometimes glued to the very next line with no
+        # line break at all in the source PDF (2021's first specialty on a
+        # page, e.g. "ANESTESIOLOGIA Administração Regional de Saúde de
+        # Lisboa e Vale do Tejo, I.P." as one extracted line) -- an
+        # unrecognized header doesn't just lose that one line, it silently
+        # drops the entire specialty's data under whichever specialty came
+        # before it. If `text` starts with a known specialty spelling
+        # followed by more text, split it: recognize the specialty and put
+        # the remainder back to be parsed as its own line next.
+        # Some pages also glue a leftover column-header fragment onto the
+        # FRONT of the specialty name instead ("de Vagas ANATOMIA
+        # PATOLÓGICA ..." -- the tail of "Número de Vagas" from the repeated
+        # header row) -- search rather than anchor at the very start, but
+        # only accept a short leading fragment so this can't misfire on an
+        # institution name that happens to contain a specialty word deep
+        # inside a much longer line.
+        glued = None
+        for variant, canonical in variant_pairs:
+            m = re.search(re.escape(variant) + r"(?=\s|$)", text, re.IGNORECASE)
+            if m and m.start() <= 20:
+                glued = (canonical, text[m.end() :].strip())
+                break
+        if glued:
+            current_specialty, remainder = glued
+            current_region = None
+            if remainder:
+                lines[i] = remainder
+            else:
+                i += 1
             continue
 
         if _is_region_header(text):
@@ -163,10 +209,17 @@ def parse_vagas_labeled(path: str, year: int, known_specialties: set[str]) -> li
             i += 1
             continue
 
-        # "Subtotal N" / "Total da Especialidade N" carry their number
-        # inline; an institution name has it on the following line instead
-        # (see this file's docstring / git history for both observed
-        # patterns). Try inline first, then the next-line fallback.
+        # Most years print "Total da Especialidade <N>"; some (2024) print
+        # just the bare number directly under the specialty name, before any
+        # region section -- that's still the specialty total, not a stray line.
+        bare_total = FOOTNOTE_NUM.fullmatch(text)
+        if bare_total and current_specialty and current_region is None:
+            rows.append(LabeledVagaRow(year, current_specialty, None, None, int(bare_total.group(1))))
+            i += 1
+            continue
+
+        # Subtotal/total lines carry their number inline; institution names
+        # have it on the following line instead.
         is_total = TOTAL_LABEL.search(text)
         is_subtotal = SUBTOTAL_LABEL.match(text)
 
@@ -174,8 +227,10 @@ def parse_vagas_labeled(path: str, year: int, known_specialties: set[str]) -> li
         if m and (is_total or is_subtotal):
             seats = int(m.group(1))
             consumed = 1
-        elif i + 1 < n and re.fullmatch(r"\d+", lines[i + 1]):
-            seats = int(lines[i + 1])
+        elif i + 1 < n and (fm := FOOTNOTE_NUM.fullmatch(lines[i + 1])):
+            # 2022 marks some seat counts with a footnote letter, e.g. "a) 8"
+            # (protocol/shared seats) -- the number itself is the real count.
+            seats = int(fm.group(1))
             consumed = 2
         else:
             i += 1

@@ -16,19 +16,20 @@
 }
 
 .region {
-  fill: var(--color-bg);
+  fill: var(--region-fill);
+  fill-opacity: 0.35;
   stroke: var(--color-border);
   stroke-width: 1.5;
-  transition: fill var(--transition);
+  transition: fill-opacity var(--transition-slow), stroke var(--transition);
 }
 
 .clickable:hover .region {
-  fill: var(--color-primary);
+  fill-opacity: 0.6;
 }
 
 .regionActive {
-  fill: var(--color-secondary) !important;
-  stroke: var(--color-secondary-dark);
+  fill-opacity: 0.9 !important;
+  stroke: var(--color-text);
 }
 
 .regionLabel {
@@ -62,11 +63,22 @@
 
 .legendItem,
 .legendItemActive {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   cursor: pointer;
   padding: 0.3rem 0.5rem;
   border-radius: calc(var(--radius) / 2);
   color: var(--color-text-muted);
   transition: background var(--transition), color var(--transition);
+}
+
+.legendSwatch {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  flex-shrink: 0;
 }
 
 .legendItem:hover {

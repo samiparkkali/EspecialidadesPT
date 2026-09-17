@@ -71,9 +71,8 @@ def status_and_year(path: str, ocr_fallback_path: str | None = None) -> tuple[bo
     doc = fitz.open(path)
     text = "\n".join(doc[i].get_text() for i in range(min(5, doc.page_count)))
 
-    # A scanned PDF can still have a short native-text cover page (e.g.
-    # 2025-colocados.pdf), so check "not much text" rather than "no text
-    # at all" -- otherwise the OCR fallback never triggers for it.
+    # A scanned PDF can still have a short native-text cover page, so check
+    # "not much text" rather than "no text at all" or OCR never triggers.
     if len(text.strip()) < 200 and ocr_fallback_path:
         ocr_path = Path(ocr_fallback_path)
         if ocr_path.exists():

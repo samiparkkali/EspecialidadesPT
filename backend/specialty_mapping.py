@@ -32,15 +32,22 @@ CANONICAL_MAP: dict[str, list[str]] = {
         "Endocrinologia e Nutrição",
         "Endocrinologia/nutrição",
         "Endocrinologia / Nutrição",
+        "Endocrinologia/ Nutrição",
+    ],
+    "Imuno-Hemoterapia": [
+        "Imuno-Hemoterapia",
+        "Imunohemoterapia",
     ],
     "Ginecologia e Obstetrícia": [
         "Ginecologia e Obstetrícia",
         "Ginecologia / Obstetrícia",
         "Ginecologia/obstetrícia",
+        "Ginecologia/ Obstetrícia",
     ],
     "Medicina Física e de Reabilitação": [
         "Medicina Física e de Reabilitação",
         "Medicina Física E De Reabilitação",
+        "Medicina Física e Reabilitação",
     ],
     "Medicina Geral e Familiar": [
         "Medicina Geral e Familiar",
@@ -64,9 +71,7 @@ CANONICAL_MAP: dict[str, list[str]] = {
     "Oncologia Médica": ["Oncologia Médica"],
     "Radioncologia": ["Radioncologia", "Radioterapia"],
     "Doenças Infecciosas": ["Doenças Infecciosas", "Doenças Infeciosas"],
-    # Not yet seen in the years currently parsed (2022 fails to parse,
-    # 2024/2025 need OCR) -- kept here so it matches immediately once one
-    # of those years is added, per the "added last year" note.
+    # Not yet seen in currently-parsed years -- kept so it matches once one is added.
     "Medicina de Emergência": [
         "Medicina de Emergência",
         "Medicina De Emergência",
@@ -98,10 +103,8 @@ if __name__ == "__main__":
         for row in csv.DictReader(f):
             spec = row.get("specialty", "")
             if spec and canonicalize_specialty(spec) == spec.strip():
-                # Still "unmapped" in the sense that it fell through to the
-                # raw-name fallback rather than matching a known variant --
-                # only worth flagging if it's suspiciously similar to
-                # something already in CANONICAL_MAP (manual review).
+                # Fell through to the raw-name fallback; flag only if similar
+                # to an existing CANONICAL_MAP entry (manual review).
                 unmapped[spec.strip()] += 1
 
     print(f"{len(unmapped)} distinct specialties passed through unchanged "

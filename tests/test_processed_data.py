@@ -29,6 +29,15 @@ VALID_REGION_KEYS = {
     "acores", "madeira",
 }
 
+# Each vagas-YYYY.pdf prints its own grand total ("Total Geral" 2023-2025,
+# "Total Nacional" 2021-2022) -- the one number in the whole pipeline that's
+# ACSS's own, not derived. Summing vagas.csv's seats per year must land
+# within a few seats of it (institution-vs-region rounding, not a parser
+# regression) -- see notebooks/01_qa_seats_by_year_location.ipynb and
+# build_dataset.py's _leaf_rows_only for why this used to be off by ~3x.
+OFFICIAL_TOTAL_SEATS = {2021: 1938, 2022: 2054, 2023: 2248, 2024: 2165, 2025: 2330}
+OFFICIAL_TOTAL_TOLERANCE = 200
+
 
 def _read_csv(path: Path) -> list[dict]:
     if not path.exists():
@@ -97,6 +106,20 @@ def test_colocados_has_specialty():
     rows = _read_csv(COLOCADOS_CSV)
     for r in rows:
         assert r["specialty"], r
+
+
+def test_vagas_total_seats_matches_official_grand_total_per_year():
+    rows = _read_csv(VAGAS_CSV)
+    totals: dict[int, int] = {}
+    for r in rows:
+        year = int(r["year"])
+        totals[year] = totals.get(year, 0) + int(r["seats"])
+    for year, official in OFFICIAL_TOTAL_SEATS.items():
+        got = totals.get(year, 0)
+        assert abs(got - official) <= OFFICIAL_TOTAL_TOLERANCE, (
+            f"{year}: got {got}, official grand total is {official} "
+            f"(diff {got - official}, tolerance {OFFICIAL_TOTAL_TOLERANCE})"
+        )
 
 
 def test_colocados_institution_blank_only_for_2024():

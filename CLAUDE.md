@@ -7,7 +7,7 @@ Guidance for Claude Code (or any agent) working in this repo.
 A pipeline + app for analyzing the Portuguese medical specialty matching
 process ("colocação de médicos"): yearly seat offers (`vagas-YYYY.pdf`, one
 per specialty/region/hospital) and yearly placement results
-(`YYYY-colocados.pdf` / `YYYY-colocações.pdf`, who got placed where, with
+(`YYYY-colocados.pdf`, who got placed where, with
 each candidate's national ordering number). The eventual goal is a UI where
 a student enters their ordering number and sees which specialties they could
 realistically get into, filterable by region/hospital.
@@ -37,6 +37,13 @@ realistically get into, filterable by region/hospital.
 - `backend/` — Python: PDF extraction, parsing into structured records,
   and an API serving the processed data to the frontend.
 - `frontend/` — React + Vite app for browsing/filtering the data.
+- `notebooks/` — QA notebooks over the processed CSVs (seats by year/
+  location, specialty drift, colocados-vs-vagas cross-check). Regenerate
+  from `notebooks/build_notebooks.py`, don't hand-edit cell JSON — see
+  README.md. Known issues these surfaced (2025 under-parsed, unmapped
+  regions, colocados > vagas mismatches) are listed in README.md's Known
+  limitations; fix the underlying extractor, not the notebook, when one
+  gets resolved.
 
 ## Python conventions
 
@@ -75,9 +82,9 @@ realistically get into, filterable by region/hospital.
 - Confirm before trusting any extracted number: does the filename's year
   match the year printed inside the document, and for `colocacoes/` files,
   is the result marked as *definitivo* (final) rather than *provisório*
-  (provisional)? Some years' filenames are inconsistent
-  (`colocações` vs `colocados`) — don't infer status from the filename
-  alone, check the document text.
+  (provisional)? Filenames are normalized to `YYYY-colocados.pdf` but that's
+  just a naming convention — don't infer definitivo/provisório status from
+  the filename, check the document text.
 - Before assuming OCR is needed: check whether the PDF actually has
   extractable native text first (`page.get_text()` non-empty, embedded
   Unicode is usually correct even if a terminal displays it as mojibake —
@@ -99,6 +106,19 @@ realistically get into, filterable by region/hospital.
   Always add a canonicalized institution column (see
   `backend/institution_mapping.py`) alongside the raw name before doing
   any cross-year aggregation or charting; never overwrite the raw name.
+
+## Comment style
+
+- Default to no comments. Only add one when the *why* is non-obvious — a
+  hidden constraint, a subtle invariant, a workaround for a specific
+  parser quirk — never to restate what the code already says.
+- Keep comments short: one line, max two. No multi-paragraph docstrings
+  or comment blocks anywhere in this repo (backend, frontend, notebooks).
+- Don't reference the current task/fix/PR in a comment ("added for the
+  2025 OCR fallback", "fixes #12") — that belongs in the commit message,
+  not the code, and rots as the file changes.
+- Notebook markdown cells follow the same rule: state the finding and
+  why it matters in a sentence or two, not a running narrative.
 
 ## General
 

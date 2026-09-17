@@ -70,11 +70,27 @@ def parse_ocr_colocados_full(
     text = open(markdown_path, encoding="utf-8").read()
     patterns = _search_patterns(known_specialties)
 
-    mentions: list[tuple[int, int, str]] = []  # (start, end, canonical)
+    # As in extract_colocados_native_full.py: some known specialty names are
+    # literal substrings of others ("Urologia" inside "Neurologia",
+    # "Radiologia" inside "Neurorradiologia", "Psiquiatria" inside its child
+    # specialties). Collecting every pattern's matches independently and
+    # walking to the last one before each number pair means a real
+    # "Neurologia" mention gets silently overwritten by the nested
+    # "Urologia" match a few characters later, so overlaps must resolve to
+    # the longest match, not the textually-last one.
+    raw_mentions: list[tuple[int, int, str]] = []
     for pattern, canonical in sorted(patterns.items(), key=lambda kv: len(kv[0]), reverse=True):
         for m in re.finditer(re.escape(pattern), text, re.IGNORECASE):
-            mentions.append((m.start(), m.end(), canonical))
-    mentions.sort()
+            raw_mentions.append((m.start(), m.end(), canonical))
+    raw_mentions.sort(key=lambda x: (x[0], -(x[1] - x[0])))
+
+    mentions: list[tuple[int, int, str]] = []
+    last_end = -1
+    for start, end, canonical in raw_mentions:
+        if start < last_end:
+            continue
+        mentions.append((start, end, canonical))
+        last_end = end
 
     pairs = list(NUMBER_PAIR.finditer(text))
 

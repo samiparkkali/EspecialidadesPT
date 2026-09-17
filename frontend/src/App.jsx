@@ -5,10 +5,15 @@ import Filters from './components/Filters/Filters';
 import Evolution from './components/Evolution/Evolution';
 import Predict from './components/Predict/Predict';
 import ThisYear from './components/ThisYear/ThisYear';
+import RankMyPreferences from './components/RankMyPreferences/RankMyPreferences';
+import SpecialtyStats from './components/SpecialtyStats/SpecialtyStats';
+import Spinner from './components/Spinner/Spinner';
 
 const TABS = [
   { id: 'overview', label: 'Overview' },
   { id: 'this-year', label: "This Year's Seats" },
+  { id: 'specialty-stats', label: 'Specialty Statistics' },
+  { id: 'rank-preferences', label: 'Rank My Preferences' },
 ];
 
 function App() {
@@ -36,24 +41,9 @@ function App() {
   const evolutionPoints = useMemo(() => {
     if (!vagas) return [];
 
-    // Some years only have specialty-level totals (no institution
-    // breakdown, see backend/build_dataset.py's fallback to
-    // extract_vagas_totals.py) -- filtering an institution only makes
-    // sense for years that actually have institution rows, so per
-    // (year, specialty) prefer summing institution rows when present,
-    // otherwise fall back to that specialty's single total row
-    // (region === '' && institution === '').
-    const hasInstitutionData = new Set(
-      vagas.filter((r) => r.institution).map((r) => `${r.year}|${r.specialty}`)
-    );
-
-    const rows = vagas.filter((r) => {
-      const key = `${r.year}|${r.specialty}`;
-      if (hasInstitutionData.has(key)) return Boolean(r.institution);
-      return !r.region && !r.institution;
-    });
-
-    const filtered = rows.filter((r) => {
+    // Each row is already leaf-level (build_dataset.py's _leaf_rows_only),
+    // so summing directly here can't double-count across granularity levels.
+    const filtered = vagas.filter((r) => {
       if (specialty && r.specialty !== specialty) return false;
       if (institution) {
         // Years without institution data can't be filtered by institution.
@@ -78,12 +68,15 @@ function App() {
   }
 
   if (!vagas || !colocados) {
-    return <p>Loading data...</p>;
+    return <Spinner label="Loading seat and placement data..." />;
   }
 
   return (
     <>
-      <h1>Grey&apos;s Internato</h1>
+      <h1>
+        <img src="/flag-pt.svg" alt="Portugal" width="28" height="19" style={{ verticalAlign: 'middle', marginRight: '0.5rem', borderRadius: '2px' }} />
+        Grey&apos;s Internato
+      </h1>
       <p className="subtitle">
         It&apos;s a beautiful day to pick the specialty that will one day let
         you retire early and become a happy plumber. Seat offers and
@@ -112,7 +105,12 @@ function App() {
 
       {activeTab === 'this-year' && <ThisYear vagas={vagas} />}
 
+      {activeTab === 'specialty-stats' && <SpecialtyStats vagas={vagas} />}
+
+      {activeTab === 'rank-preferences' && <RankMyPreferences vagas={vagas} colocados={colocados} />}
+
       <footer className="site-footer">
+        &copy; {new Date().getFullYear()} All rights reserved. Engineered by{' '}
         <a href="https://parkkali-website.vercel.app/" target="_blank" rel="noopener noreferrer">
           Sami Parkkali
         </a>

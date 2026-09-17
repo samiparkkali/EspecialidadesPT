@@ -1,0 +1,346 @@
+.warningText {
+  color: var(--color-secondary);
+  font-size: 0.8rem;
+  margin: 0.25rem 0 0;
+}
+
+.filterRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 1rem;
+  margin: 0.75rem 0 1rem;
+}
+
+.textFilter {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.checkItem {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--color-text);
+}
+
+.checkItem input {
+  width: auto;
+}
+
+.subheading {
+  font-size: 0.9rem;
+  color: var(--color-secondary);
+  margin: 0 0 0.5rem;
+}
+
+.rankLayout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+}
+
+@media (max-width: 640px) {
+  .rankLayout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.comboList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.comboItem {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  text-align: left;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+  border-radius: calc(var(--radius) / 2);
+  padding: 0.5rem 0.6rem;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: border-color var(--transition);
+}
+
+.comboItemTitle {
+  font-weight: 500;
+}
+
+.comboItemMeta {
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
+}
+
+.cutoffTag {
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+.comboItem:hover {
+  border-color: var(--color-secondary);
+}
+
+.comboItem:disabled,
+.expandButton:disabled,
+.institutionItem:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.comboGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.comboRow {
+  display: flex;
+  align-items: stretch;
+  gap: 0.35rem;
+}
+
+.comboRow .comboItem {
+  flex: 1;
+}
+
+.expandButton {
+  background: none;
+  border: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  border-radius: calc(var(--radius) / 2);
+  padding: 0.5rem 0.6rem;
+  font-size: 0.75rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color var(--transition);
+}
+
+.expandButton:hover {
+  border-color: var(--color-secondary);
+}
+
+.institutionList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding-left: 1rem;
+  border-left: 2px solid var(--color-border);
+}
+
+.institutionItem {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  text-align: left;
+  background: transparent;
+  border: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  border-radius: calc(var(--radius) / 2);
+  padding: 0.4rem 0.55rem;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: border-color var(--transition);
+}
+
+.institutionItem:hover {
+  border-color: var(--color-secondary);
+}
+
+.selfRow {
+  font-weight: 600;
+  background: var(--color-bg);
+}
+
+.notPlacedRow {
+  color: var(--color-text-muted);
+}
+
+.estimatedTag {
+  color: var(--color-text-muted);
+  font-size: 0.7rem;
+  font-style: italic;
+}
+
+.summaryRow {
+  display: flex;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.5rem;
+}
+
+.summaryStat {
+  font-size: 0.85rem;
+  color: var(--color-secondary);
+  font-weight: 600;
+}
+
+.resultsActions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.rankItemLabel {
+  overflow-wrap: anywhere;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.rankItemDragOver {
+  border-color: var(--color-secondary);
+}
+
+.simulatePanel {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.rankNumber {
+  color: var(--color-text-muted);
+}
+
+.rankList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.rankListItemWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.rankItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: calc(var(--radius) / 2);
+  padding: 0.5rem 0.6rem;
+  font-size: 0.8rem;
+  cursor: grab;
+}
+
+.rankControls {
+  display: flex;
+  gap: 0.3rem;
+  flex-shrink: 0;
+}
+
+.rankControls button {
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  padding: 0.1rem 0.3rem;
+}
+
+.rankControls button:hover {
+  color: var(--color-secondary);
+}
+
+.numberRow {
+  display: flex;
+  align-items: flex-end;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin: 0.5rem 0 0.75rem;
+}
+
+.numberRow label {
+  max-width: 220px;
+}
+
+.likelihoodPanel {
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 1rem 1.25rem;
+  margin-top: 1.25rem;
+}
+
+.likelihoodList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.likelihoodItem {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(140px, 40%) 3rem 1.75rem;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0.7rem;
+  font-size: 0.85rem;
+}
+
+@media (max-width: 640px) {
+  .likelihoodItem {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 25%) 2.6rem 1.5rem;
+    gap: 0.4rem;
+    font-size: 0.78rem;
+  }
+}
+
+.likelihoodLabel {
+  overflow-wrap: anywhere;
+}
+
+.likelihoodBarTrack {
+  position: relative;
+  height: 8px;
+  border-radius: 4px;
+  background: var(--color-surface-raised);
+  overflow: hidden;
+}
+
+.likelihoodBarFill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  height: 100%;
+  background: var(--color-secondary);
+  border-radius: 4px;
+}
+
+.likelihoodPct {
+  text-align: right;
+  font-weight: 600;
+  color: var(--color-secondary);
+}
+
+.generateRow {
+  display: flex;
+  align-items: flex-end;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-top: 0.5rem;
+}
+
+.generateRow label {
+  max-width: 260px;
+}

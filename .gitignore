@@ -38,3 +38,8 @@ Thumbs.db
 
 # Claude
 .claude
+
+# Working notes on data-extraction quality; content is a point-in-time
+# snapshot re-derived by re-running the reconciliation checks, not a record
+# worth keeping in history.
+EXTRACTION_FINDINGS.md

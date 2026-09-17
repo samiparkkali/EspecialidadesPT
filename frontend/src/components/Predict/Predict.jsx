@@ -1,13 +1,8 @@
 import { useMemo, useState } from 'react';
 import SearchableSelect from '../SearchableSelect/SearchableSelect';
 
-// Mirrors backend/api.py's /api/predict: for each specialty/institution,
-// track the "last ordering number placed" (the cutoff) per year in
-// colocados.json. A candidate with a given ordering number would have
-// gotten in for any year where their number is <= that year's cutoff
-// (lower ordering number = better rank). Shown per-year, plus an average,
-// since a single averaged cutoff hides how much it varies year to year --
-// this gets more accurate as more years' colocados data get added.
+// Per specialty/institution, tracks each year's cutoff (last ordering number
+// placed); shown per-year rather than just averaged, since the cutoff varies a lot year to year.
 const UNKNOWN_INSTITUTION = 'Institution not recorded (OCR year)';
 
 const buildCutoffsByYear = (colocados) => {
@@ -30,8 +25,11 @@ const buildCutoffsByYear = (colocados) => {
   return Array.from(grouped.values());
 };
 
+const DEFAULT_OFFSET = 200;
+
 const Predict = ({ colocados }) => {
   const [orderingNumber, setOrderingNumber] = useState('');
+  const [offset, setOffset] = useState(String(DEFAULT_OFFSET));
   const [specialtyFilter, setSpecialtyFilter] = useState('');
   const groups = useMemo(() => buildCutoffsByYear(colocados), [colocados]);
 
@@ -43,39 +41,55 @@ const Predict = ({ colocados }) => {
   const results = useMemo(() => {
     const n = Number(orderingNumber);
     if (!orderingNumber || Number.isNaN(n) || n <= 0) return null;
+    const margin = Math.max(0, Number(offset) || 0);
 
     return groups
       .filter((g) => !specialtyFilter || g.specialty === specialtyFilter)
       .map((g) => {
         const years = Array.from(g.cutoffByYear.entries());
-        const eligibleYears = years.filter(([, cutoff]) => cutoff >= n).map(([year]) => year);
+        const eligibleYears = years
+          .filter(([, cutoff]) => cutoff >= n)
+          .map(([year, cutoff]) => ({ year, cutoff }));
+        // "Close call": that year's cutoff would need to be up to `margin`
+        // higher -- judged per year, not the average, since one outlier
+        // year can be a near-miss even when the average looks far off.
+        const closeYears = years
+          .filter(([, cutoff]) => cutoff < n && cutoff >= n - margin)
+          .map(([year, cutoff]) => ({ year, cutoff }));
         const avgCutoff = Math.round(
           years.reduce((sum, [, c]) => sum + c, 0) / years.length
+        );
+        const bestCutoff = Math.max(
+          0,
+          ...eligibleYears.map((y) => y.cutoff),
+          ...closeYears.map((y) => y.cutoff)
         );
         return {
           specialty: g.specialty,
           institution: g.institution,
           avgCutoff,
-          eligibleYears: eligibleYears.sort((a, b) => a - b),
+          bestCutoff,
+          eligibleYears: eligibleYears.sort((a, b) => a.year - b.year),
+          closeYears: closeYears.sort((a, b) => a.year - b.year),
           totalYears: years.length,
         };
       })
-      .filter((r) => r.eligibleYears.length > 0)
-      .sort((a, b) => b.eligibleYears.length - a.eligibleYears.length || a.avgCutoff - b.avgCutoff);
-  }, [groups, orderingNumber, specialtyFilter]);
+      .filter((r) => r.eligibleYears.length > 0 || r.closeYears.length > 0)
+      .sort((a, b) => a.avgCutoff - b.avgCutoff);
+  }, [groups, orderingNumber, offset, specialtyFilter]);
 
   return (
     <div className="card">
-      <h2>What could I get into with this ordering number?</h2>
+      <h2>What could I get into with this Golden Ticket Number?</h2>
       <p className="subtitle">
-        For each specialty/institution, shows which years this ordering
-        number would have been good enough for (ordering number at or below
-        that year's last candidate placed). Not a real forecast, just what
-        the loaded years actually show, year by year.
+        Enter your Golden Ticket Number ("ordem de colocação") to see which specialty/institution combinations it
+        would have gotten you into, checked separately against each past year's actual cutoff (the last candidate
+        placed that year) rather than a single blended average. It's a lookup against real history, not a forecast.
+        Results are ordered by average cutoff, lowest (most competitive) first.
       </p>
       <div className="filters-row">
         <label htmlFor="ordering-input">
-          Ordering number
+          Golden Ticket Number
           <input
             id="ordering-input"
             type="number"
@@ -86,6 +100,17 @@ const Predict = ({ colocados }) => {
           />
         </label>
 
+        <label htmlFor="offset-input">
+          Offset (+)
+          <input
+            id="offset-input"
+            type="number"
+            min="0"
+            value={offset}
+            onChange={(e) => setOffset(e.target.value)}
+          />
+        </label>
+
         <SearchableSelect
           label="Specialty"
           options={specialties}
@@ -93,6 +118,13 @@ const Predict = ({ colocados }) => {
           onChange={setSpecialtyFilter}
         />
       </div>
+      {orderingNumber && (
+        <p className="subtitle">
+          "Close call" years use a +{Math.max(0, Number(offset) || 0)} offset:
+          years where your Golden Ticket Number would have needed to be up to
+          that much better to get in, shown separately from actual matches.
+        </p>
+      )}
 
       {results && (
         <table style={{ marginTop: '1rem' }}>
@@ -101,6 +133,7 @@ const Predict = ({ colocados }) => {
               <th>Specialty</th>
               <th>Institution</th>
               <th>Years you'd get in</th>
+              <th>Close calls (+offset)</th>
               <th>Average cutoff</th>
             </tr>
           </thead>
@@ -110,17 +143,18 @@ const Predict = ({ colocados }) => {
                 <td>{r.specialty}</td>
                 <td>{r.institution}</td>
                 <td>
-                  {r.eligibleYears.join(', ')}
-                  {r.eligibleYears.length < r.totalYears && (
+                  {r.eligibleYears.map((y) => `${y.year} (${y.cutoff})`).join(', ') || '-'}
+                  {r.eligibleYears.length > 0 && r.eligibleYears.length < r.totalYears && (
                     <span className="subtitle"> (of {r.totalYears} years with data)</span>
                   )}
                 </td>
+                <td>{r.closeYears.map((y) => `${y.year} (${y.cutoff})`).join(', ') || '-'}</td>
                 <td>{r.avgCutoff}</td>
               </tr>
             ))}
             {results.length === 0 && (
               <tr>
-                <td colSpan={4}>No matches for this number with the current data. Maybe try plumbing.</td>
+                <td colSpan={5}>No matches for this number with the current data. Maybe try plumbing.</td>
               </tr>
             )}
           </tbody>

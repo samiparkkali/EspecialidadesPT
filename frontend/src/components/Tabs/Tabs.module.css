@@ -10,18 +10,20 @@
 .tabActive {
   background: none;
   border: none;
+  border-radius: 0;
   color: var(--color-text-muted);
-  font-size: 0.9rem;
-  font-family: inherit;
-  padding: 0.6rem 0.9rem;
+  font-size: var(--font-size-base);
+  padding: 0.6rem 0.95rem;
   cursor: pointer;
   border-bottom: 2px solid transparent;
   transition: color var(--transition), border-color var(--transition);
   white-space: nowrap;
 }
 
-.tab:hover {
+.tab:hover:not(:disabled) {
   color: var(--color-text);
+  background: none;
+  border-color: var(--color-border-soft);
 }
 
 .tabActive {

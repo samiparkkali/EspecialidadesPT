@@ -17,8 +17,8 @@ REGION_KEYS: dict[str, list[str]] = {
     "lisboa-vale-tejo": ["Lisboa e Vale do Tejo"],
     "alentejo": ["Alentejo"],
     "algarve": ["Algarve"],
-    "acores": ["Açores", "Acores"],
-    "madeira": ["Madeira"],
+    "acores": ["Açores", "Acores", "RAA"],
+    "madeira": ["Madeira", "RAM"],
 }
 
 
