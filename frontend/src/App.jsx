@@ -74,7 +74,7 @@ function App() {
 
   return (
     <>
-      <h1>Grey&apos;s Internato</h1>
+      <h1>Internado no Internato</h1>
       <p className="subtitle">
         It&apos;s a beautiful day to pick the specialty that will one day let
         you retire early and become a happy plumber. Seat offers and
