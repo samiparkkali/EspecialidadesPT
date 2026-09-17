@@ -15,6 +15,13 @@ const REGION_LABELS = {
   madeira: 'MADEIRA',
 };
 
+// Green (likely to enter) -> yellow -> red (unlikely), for likelihood pct display.
+const colorForPct = (pct) => {
+  const p = Math.max(0, Math.min(100, pct));
+  const hue = (p / 100) * 120; // 0 = red, 120 = green
+  return `hsl(${hue}, 70%, 42%)`;
+};
+
 const regionLabel = (regionKey) =>
   REGION_LABELS[regionKey] || (regionKey ? regionKey.replace(/-/g, ' ').toUpperCase() : 'UNMAPPED REGION');
 
@@ -112,7 +119,9 @@ const computeLikelihood = (preferences, cutoffsByKey, institutionsByCombo, myNum
 const RankMyPreferences = ({ vagas, colocados }) => {
   const [preferences, setPreferences] = useState([]);
   const [expandedCombo, setExpandedCombo] = useState(null);
-  const [expandedRankBreakdown, setExpandedRankBreakdown] = useState(() => new Set());
+  // Institution breakdowns default OPEN (tracks which ones the user
+  // collapsed, rather than which ones they expanded).
+  const [collapsedRankBreakdown, setCollapsedRankBreakdown] = useState(() => new Set());
   const [myOrderingNumber, setMyOrderingNumber] = useState('');
   const [spreadOffset, setSpreadOffset] = useState(200);
   const [comboFilter, setComboFilter] = useState('');
@@ -291,7 +300,7 @@ const RankMyPreferences = ({ vagas, colocados }) => {
   };
 
   const toggleRankBreakdown = (key) => {
-    setExpandedRankBreakdown((prev) => {
+    setCollapsedRankBreakdown((prev) => {
       const next = new Set(prev);
       if (next.has(key)) next.delete(key);
       else next.add(key);
@@ -517,7 +526,7 @@ const RankMyPreferences = ({ vagas, colocados }) => {
                   ? institutionsByCombo.get(baseComboKey(p.specialty, p.regionKey)) || []
                   : [];
                 const canBreakdown = isRegionOnly && regionInstitutions.length > 1;
-                const breakdownOpen = canBreakdown && expandedRankBreakdown.has(key);
+                const breakdownOpen = canBreakdown && !collapsedRankBreakdown.has(key);
                 const breakdown = breakdownOpen
                   ? institutionBreakdown(p.specialty, p.regionKey, myNumber, clampedOffset, maxOrdering)
                   : null;
@@ -568,7 +577,10 @@ const RankMyPreferences = ({ vagas, colocados }) => {
                                 <span className={styles.cutoffTag}> · last cutoffs {inst.cutoffText}</span>
                               )}
                               {inst.pct !== null && (
-                                <span className={styles.cutoffTag}> · ~{inst.pct}% chance of entering</span>
+                                <span className={styles.cutoffTag} style={{ color: colorForPct(inst.pct) }}>
+                                  {' '}
+                                  · ~{inst.pct}% chance of entering
+                                </span>
                               )}
                             </span>
                           </div>
@@ -604,7 +616,7 @@ const RankMyPreferences = ({ vagas, colocados }) => {
                   ? institutionsByCombo.get(baseComboKey(opt.specialty, opt.regionKey)) || []
                   : [];
                 const canBreakdown = !opt.institution && regionInstitutions.length > 1;
-                const breakdownOpen = canBreakdown && expandedRankBreakdown.has(key);
+                const breakdownOpen = canBreakdown && !collapsedRankBreakdown.has(key);
                 const breakdown = breakdownOpen
                   ? institutionBreakdown(opt.specialty, opt.regionKey, myNumber, clampedOffset, maxOrdering)
                   : null;
@@ -620,9 +632,14 @@ const RankMyPreferences = ({ vagas, colocados }) => {
                         {!opt.hasData && <span className={styles.cutoffTag}> no historical data</span>}
                       </span>
                       <span className={styles.likelihoodBarTrack}>
-                        <span className={styles.likelihoodBarFill} style={{ width: `${opt.pct}%` }} />
+                        <span
+                          className={styles.likelihoodBarFill}
+                          style={{ width: `${opt.pct}%`, background: colorForPct(opt.pct) }}
+                        />
                       </span>
-                      <span className={styles.likelihoodPct}>{opt.hasData ? `${opt.pct}%` : '-'}</span>
+                      <span className={styles.likelihoodPct} style={{ color: opt.hasData ? colorForPct(opt.pct) : undefined }}>
+                        {opt.hasData ? `${opt.pct}%` : '-'}
+                      </span>
                       {canBreakdown && (
                         <button
                           type="button"
@@ -644,7 +661,10 @@ const RankMyPreferences = ({ vagas, colocados }) => {
                                 <span className={styles.cutoffTag}> · last cutoffs {inst.cutoffText}</span>
                               )}
                               {inst.pct !== null && (
-                                <span className={styles.cutoffTag}> · ~{inst.pct}% chance of entering</span>
+                                <span className={styles.cutoffTag} style={{ color: colorForPct(inst.pct) }}>
+                                  {' '}
+                                  · ~{inst.pct}% chance of entering
+                                </span>
                               )}
                             </span>
                           </div>

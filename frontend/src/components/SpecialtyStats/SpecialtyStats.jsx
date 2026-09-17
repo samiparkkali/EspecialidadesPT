@@ -62,23 +62,40 @@ const SpecialtyStats = ({ vagas }) => {
     [rows, years]
   );
 
-  const byInstitution = useMemo(() => {
+  // Grouped by region so the table reads as a browsable hierarchy (region ->
+  // institution) instead of one long alphabetical list -- each institution
+  // keeps whichever region it was most recently seen under.
+  const byInstitutionByRegion = useMemo(() => {
     if (latestInstitutionYear === null) return [];
     const byName = new Map();
     for (const r of rows) {
       if (!r.institution || !institutionYears.includes(Number(r.year))) continue;
       const name = r.canonical_institution || r.institution;
-      if (!byName.has(name)) byName.set(name, new Map());
-      const byYear = byName.get(name);
-      byYear.set(Number(r.year), (byYear.get(Number(r.year)) || 0) + Number(r.seats));
+      if (!byName.has(name)) byName.set(name, { byYear: new Map(), regionKey: '', regionYear: -Infinity });
+      const entry = byName.get(name);
+      const year = Number(r.year);
+      entry.byYear.set(year, (entry.byYear.get(year) || 0) + Number(r.seats));
+      if (year >= entry.regionYear) {
+        entry.regionKey = r.region_key || '';
+        entry.regionYear = year;
+      }
     }
-    return [...byName.entries()]
-      .map(([institution, byYear]) => ({
+    const byRegion = new Map();
+    for (const [institution, entry] of byName.entries()) {
+      if (!byRegion.has(entry.regionKey)) byRegion.set(entry.regionKey, []);
+      byRegion.get(entry.regionKey).push({
         institution,
-        seats: byYear.get(latestInstitutionYear) || 0,
-        byYear,
+        seats: entry.byYear.get(latestInstitutionYear) || 0,
+        byYear: entry.byYear,
+      });
+    }
+    return [...byRegion.entries()]
+      .map(([regionKey, institutions]) => ({
+        regionKey,
+        institutions: institutions.sort((a, b) => a.institution.localeCompare(b.institution)),
+        totalSeats: institutions.reduce((sum, inst) => sum + inst.seats, 0),
       }))
-      .sort((a, b) => b.seats - a.seats || a.institution.localeCompare(b.institution));
+      .sort((a, b) => regionLabel(a.regionKey).localeCompare(regionLabel(b.regionKey)));
   }, [rows, latestInstitutionYear, institutionYears]);
 
   if (!specialties.length) {
@@ -198,36 +215,51 @@ const SpecialtyStats = ({ vagas }) => {
         </div>
       )}
 
-      {specialty && byInstitution.length > 0 && (
+      {specialty && byInstitutionByRegion.length > 0 && (
         <div className="card">
           <h2 className={styles.chartTitle}>
             Seats by institution: {specialty}
           </h2>
           <p className="subtitle">
-            Every year with institution-level detail for this specialty, sorted by {latestInstitutionYear}'s seats.
+            Every year with institution-level detail for this specialty, grouped by region and sorted
+            alphabetically by institution.
           </p>
-          <div className={styles.tableScroll}>
-            <table>
-              <thead>
-                <tr>
-                  <th>Institution</th>
-                  {institutionYears.map((year) => (
-                    <th key={year}>{year}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {byInstitution.map((inst) => (
-                  <tr key={inst.institution}>
-                    <td>{inst.institution}</td>
-                    {institutionYears.map((year) => (
-                      <td key={year}>{inst.byYear.get(year) ?? '—'}</td>
+          {byInstitutionByRegion.map((group) => (
+            <details key={group.regionKey || 'unmapped'} className={styles.regionGroup} open>
+              <summary
+                className={styles.regionSummary}
+                style={{ borderLeft: `3px solid ${colorForRegion(group.regionKey)}` }}
+              >
+                {regionLabel(group.regionKey)}
+                <span className={styles.regionSummaryMeta}>
+                  {group.institutions.length} institution{group.institutions.length === 1 ? '' : 's'} ·{' '}
+                  {group.totalSeats} seats in {latestInstitutionYear}
+                </span>
+              </summary>
+              <div className={styles.tableScroll}>
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Institution</th>
+                      {institutionYears.map((year) => (
+                        <th key={year}>{year}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {group.institutions.map((inst) => (
+                      <tr key={inst.institution}>
+                        <td>{inst.institution}</td>
+                        {institutionYears.map((year) => (
+                          <td key={year}>{inst.byYear.get(year) ?? '—'}</td>
+                        ))}
+                      </tr>
                     ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                  </tbody>
+                </table>
+              </div>
+            </details>
+          ))}
         </div>
       )}
     </>

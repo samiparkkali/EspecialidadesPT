@@ -65,6 +65,11 @@ CANONICAL_MAP: dict[str, list[str]] = {
     ],
     "ULS Santo António": [
         "Centro Hospitalar Universitário de Santo António",
+        # "Centro Hospitalar Universitário do Porto" (CHUP) was this same
+        # entity's name before its ~2019 rename to Santo António -- some
+        # years' PDFs (and even some rows within a single-year PDF) still use
+        # the older name.
+        "Centro Hospitalar Universitário do Porto",
         "ULS Santo António",
         "ULS de Santo António",
     ],
@@ -101,6 +106,8 @@ CANONICAL_MAP: dict[str, list[str]] = {
     ],
     "ULS Gaia/Espinho": [
         "Centro Hospitalar Vila Nova de Gaia/Espinho",
+        # OCR misreads "Gaia" as "Gala" ("i" -> "l") on several pages.
+        "Centro Hospitalar Vila Nova de Gala/Espinho",
         "ULS Gaia/Espinho",
         "ULS de Gaia/Espinho",
     ],
@@ -134,6 +141,18 @@ CANONICAL_MAP: dict[str, list[str]] = {
         "ULS Matosinhos",
         "ULS de Matosinhos",
     ],
+    # Madeira's autonomous region never went through the mainland's 2023 ULS
+    # reorg -- SESARAM ("Serviço de Saúde da Região Autónoma da Madeira") is
+    # its own long-standing equivalent, and Hospital Nélio Mendonça is its
+    # main hospital, administratively part of it.
+    # Not a bare "SESARAM" pattern -- that would also swallow the distinct
+    # "SESARAM - Unidade de Saúde Pública de <X>" clinic entries and the
+    # "Sesaram (vaga protocolada - <other institution>)" cross-region
+    # placement rows, both of which must stay separate.
+    "SESARAM": [
+        "Hospital Nélio Mendonça",
+        "Hospital Dr. Nélio Mendonça",
+    ],
     "ULS Guarda": [
         "ULS Guarda",
         "ULS da Guarda",
@@ -161,9 +180,11 @@ CANONICAL_MAP: dict[str, list[str]] = {
     ],
     "ULS Médio Ave": ["Centro Hospitalar do Médio Ave", "ULS Médio Ave"],
     "ULS Entre Douro e Vouga": [
-        "Centro Hospitalar de Entre o Douro e Vouga",
-        "ULS Entre Douro e Vouga",
-        "ULS Entre o Douro e Vouga",
+        # Raw text spells this "Entre-Douro" (no "o") far more often than the
+        # decree's official "Entre o Douro" -- the hyphen-insensitive
+        # _match_key handles the hyphen/space variants, so both need listing.
+        "Entre Douro e Vouga",
+        "Entre o Douro e Vouga",
     ],
     "ULS Baixo Mondego": [
         "Hospital Distrital da Figueira da Foz",
@@ -304,12 +325,17 @@ def _strip_accents(s: str) -> str:
 
 
 def _match_key(text: str) -> str:
-    """Accent-insensitive, article-insensitive, ULS-form-insensitive key used
-    only to decide whether a CANONICAL_MAP pattern matches a raw name --
-    never used as the displayed canonical name itself."""
+    """Accent-insensitive, article-insensitive, ULS-form-insensitive,
+    hyphen-insensitive key used only to decide whether a CANONICAL_MAP
+    pattern matches a raw name -- never used as the displayed canonical name
+    itself (compound names' real hyphens, e.g. "Trás-os-Montes", are
+    unaffected since both sides of a comparison go through this same
+    normalization)."""
     text = _strip_accents(text)
     text = _ULS_FULL_NAME.sub("ULS ", text)
     text = _ARTICLE.sub("", text)
+    text = _DASH_VARIANTS.sub(" ", text)
+    text = text.replace("-", " ")
     return re.sub(r"\s+", " ", text).strip().upper()
 
 

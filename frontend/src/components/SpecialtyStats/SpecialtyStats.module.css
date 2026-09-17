@@ -63,3 +63,34 @@
 .tableScroll {
   overflow-x: auto;
 }
+
+.regionGroup {
+  border: 1px solid var(--color-border);
+  border-radius: calc(var(--radius) / 2);
+  margin-bottom: 0.6rem;
+}
+
+.regionGroup:last-child {
+  margin-bottom: 0;
+}
+
+.regionSummary {
+  cursor: pointer;
+  padding: 0.55rem 0.8rem;
+  font-weight: 600;
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  list-style: revert;
+}
+
+.regionSummaryMeta {
+  font-weight: 400;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.regionGroup .tableScroll {
+  padding: 0 0.8rem 0.6rem;
+}

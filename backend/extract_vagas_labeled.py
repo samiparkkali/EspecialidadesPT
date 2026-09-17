@@ -147,6 +147,18 @@ def parse_vagas_labeled(path: str, year: int, known_specialties: set[str]) -> li
     rows: list[LabeledVagaRow] = []
     current_specialty: str | None = None
     current_region: str | None = None
+    # Only look for a glued/boilerplate-prefixed specialty header right after
+    # finishing the previous one (i.e. right after a "Total da Especialidade"
+    # row, or at the very start) -- NOT while already walking a specialty's
+    # institution rows. Some institution names contain their own specialty's
+    # name as a substring (e.g. "Instituto Nacional Medicina Legal -
+    # Delegação do Sul" under specialty "MEDICINA LEGAL", or "Instituto de
+    # Oftalmologia Dr. Gama Pinto" under "OFTALMOLOGIA") -- without this
+    # guard, the glued-header check below misfires on those institution
+    # lines, resets current_region to None mid-parse, and silently drops
+    # every institution/region row for that specialty even though the raw
+    # PDF has full detail.
+    awaiting_specialty_header = True
 
     i = 0
     n = len(lines)
@@ -163,6 +175,7 @@ def parse_vagas_labeled(path: str, year: int, known_specialties: set[str]) -> li
             if combined in known_norm:
                 current_specialty = known_norm[combined]
                 current_region = None
+                awaiting_specialty_header = False
                 i += 2
                 continue
 
@@ -170,6 +183,7 @@ def parse_vagas_labeled(path: str, year: int, known_specialties: set[str]) -> li
         if norm_text in known_norm:
             current_specialty = known_norm[norm_text]
             current_region = None
+            awaiting_specialty_header = False
             i += 1
             continue
 
@@ -188,16 +202,19 @@ def parse_vagas_labeled(path: str, year: int, known_specialties: set[str]) -> li
         # header row) -- search rather than anchor at the very start, but
         # only accept a short leading fragment so this can't misfire on an
         # institution name that happens to contain a specialty word deep
-        # inside a much longer line.
+        # inside a much longer line. Restricted to `awaiting_specialty_header`
+        # (see above) so it can't fire on institution rows mid-specialty.
         glued = None
-        for variant, canonical in variant_pairs:
-            m = re.search(re.escape(variant) + r"(?=\s|$)", text, re.IGNORECASE)
-            if m and m.start() <= 20:
-                glued = (canonical, text[m.end() :].strip())
-                break
+        if awaiting_specialty_header:
+            for variant, canonical in variant_pairs:
+                m = re.search(re.escape(variant) + r"(?=\s|$)", text, re.IGNORECASE)
+                if m and m.start() <= 20:
+                    glued = (canonical, text[m.end() :].strip())
+                    break
         if glued:
             current_specialty, remainder = glued
             current_region = None
+            awaiting_specialty_header = False
             if remainder:
                 lines[i] = remainder
             else:
@@ -206,6 +223,7 @@ def parse_vagas_labeled(path: str, year: int, known_specialties: set[str]) -> li
 
         if _is_region_header(text):
             current_region = text
+            awaiting_specialty_header = False
             i += 1
             continue
 
@@ -215,6 +233,7 @@ def parse_vagas_labeled(path: str, year: int, known_specialties: set[str]) -> li
         bare_total = FOOTNOTE_NUM.fullmatch(text)
         if bare_total and current_specialty and current_region is None:
             rows.append(LabeledVagaRow(year, current_specialty, None, None, int(bare_total.group(1))))
+            awaiting_specialty_header = True
             i += 1
             continue
 
@@ -239,6 +258,7 @@ def parse_vagas_labeled(path: str, year: int, known_specialties: set[str]) -> li
         if is_total:
             if current_specialty:
                 rows.append(LabeledVagaRow(year, current_specialty, None, None, seats))
+            awaiting_specialty_header = True
         elif is_subtotal:
             if current_specialty and current_region:
                 rows.append(LabeledVagaRow(year, current_specialty, current_region, None, seats))
