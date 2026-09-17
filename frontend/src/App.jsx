@@ -74,10 +74,7 @@ function App() {
 
   return (
     <>
-      <h1>
-        <img src="/flag-pt.svg" alt="Portugal" width="28" height="19" style={{ verticalAlign: 'middle', marginRight: '0.5rem', borderRadius: '2px' }} />
-        Grey&apos;s Internato
-      </h1>
+      <h1>Grey&apos;s Internato</h1>
       <p className="subtitle">
         It&apos;s a beautiful day to pick the specialty that will one day let
         you retire early and become a happy plumber. Seat offers and
