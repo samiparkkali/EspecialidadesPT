@@ -27,8 +27,9 @@ const Evolution = ({ points }) => {
   const allPoints = predicted ? [...points, predicted] : points;
 
   const maxSeats = Math.max(...allPoints.map((p) => p.seats), 1);
-  const width = 480;
-  const height = 160;
+  const height = 200;
+  const barSlot = 56;
+  const width = Math.max(480, barSlot * allPoints.length);
   const barWidth = width / allPoints.length;
 
   const centers = allPoints.map((p, i) => ({
@@ -40,7 +41,8 @@ const Evolution = ({ points }) => {
   return (
     <div className="card">
       <h2 className={styles.title}>Seats by year</h2>
-      <svg viewBox={`0 0 ${width} ${height + 24}`} className={styles.chart} preserveAspectRatio="xMidYMid meet">
+      <div className={styles.chartScroll} data-h-scroll>
+      <svg viewBox={`0 0 ${width} ${height + 24}`} style={{ width: `${width}px` }} className={styles.chart}>
         {allPoints.map((p, i) => {
           const isPredicted = predicted && i === allPoints.length - 1;
           const barHeight = (p.seats / maxSeats) * height;
@@ -79,6 +81,7 @@ const Evolution = ({ points }) => {
         {predicted && <path d={trendPath} className={styles.trendLine} />}
         {predicted && centers.map((c) => <circle key={c.x} cx={c.x} cy={c.y} r={2} className={styles.trendDot} />)}
       </svg>
+      </div>
       {predicted && (
         <p className="subtitle">
           * {predicted.year} is a projection (simple trend line over the loaded years), not real data yet.

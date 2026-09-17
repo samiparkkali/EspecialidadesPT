@@ -4,10 +4,14 @@
 }
 
 .chart {
-  width: 100%;
   height: auto;
   display: block;
   overflow: visible;
+}
+
+.chartScroll {
+  overflow-x: auto;
+  overflow-y: hidden;
 }
 
 .bar {
