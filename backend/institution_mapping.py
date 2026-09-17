@@ -160,18 +160,18 @@ CANONICAL_MAP: dict[str, list[str]] = {
     # reorg. SESARAM ("Serviço de Saúde da Região Autónoma da Madeira") is the
     # whole regional health service, not one physical location, so it's kept
     # as its own separate (unmapped) entity rather than used as a canonical
-    # name here. The actual hospital is canonicalized under "Hospital Nélio
-    # Mendonça" (the name 2025's vagas notice uses) -- "Hospital Central do
-    # Funchal" is the same building/service under its other official name.
+    # name here. The actual hospital is canonicalized under "Hospital Central
+    # do Funchal" -- "Hospital Nélio Mendonça"/"Hospital Dr. Nélio Mendonça"
+    # is the same building/service under its older official name.
     # Not a bare "SESARAM" pattern -- that would also swallow the distinct
     # "SESARAM - Unidade de Saúde Pública de <X>" clinic entries and the
     # "Sesaram (vaga protocolada - <other institution>)" cross-region
     # placement rows, both of which must stay separate.
-    "Hospital Nélio Mendonça": [
-        "Hospital Nélio Mendonça",
-        "Hospital Dr. Nélio Mendonça",
+    "Hospital Central do Funchal": [
         "Hospital Central do Funchal",
         "Hospital Central do Fxnchal",
+        "Hospital Nélio Mendonça",
+        "Hospital Dr. Nélio Mendonça",
     ],
     "ULS Guarda": [
         "ULS Guarda",
