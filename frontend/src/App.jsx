@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useDataset } from './hooks/useDataset';
 import Tabs from './components/Tabs/Tabs';
 import Filters from './components/Filters/Filters';
@@ -8,6 +8,10 @@ import ThisYear from './components/ThisYear/ThisYear';
 import RankMyPreferences from './components/RankMyPreferences/RankMyPreferences';
 import SpecialtyStats from './components/SpecialtyStats/SpecialtyStats';
 import Spinner from './components/Spinner/Spinner';
+
+// Single source of truth for the site name -- shown in the <h1> and mirrored
+// to the browser tab (index.html's static <title> can't be templated).
+const SITE_TITLE = 'Internato Impossible';
 
 const TABS = [
   { id: 'overview', label: 'Overview' },
@@ -23,6 +27,10 @@ function App() {
   const [activeTab, setActiveTab] = useState('overview');
   const [specialty, setSpecialty] = useState('');
   const [institution, setInstitution] = useState('');
+
+  useEffect(() => {
+    document.title = SITE_TITLE;
+  }, []);
 
   const specialties = useMemo(() => {
     if (!vagas) return [];
@@ -74,7 +82,7 @@ function App() {
 
   return (
     <>
-      <h1>Internato Impossible</h1>
+      <h1>{SITE_TITLE}</h1>
       <p className="subtitle">
         It&apos;s a beautiful day to pick the specialty that will one day let
         you retire early and become a happy plumber. Seat offers and
