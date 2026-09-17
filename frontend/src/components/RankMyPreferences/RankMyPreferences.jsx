@@ -476,12 +476,6 @@ const RankMyPreferences = ({ vagas, colocados }) => {
                 <p className="subtitle">No combos match the current filters.</p>
               )}
             </div>
-          </div>
-          <div>
-            <h3 className={styles.subheading}>Your ranking ({preferences.length})</h3>
-            <p className="subtitle" style={{ marginTop: 0 }}>
-              Drag to reorder, or use the arrows. This is your working sketch: add, remove and reshuffle freely.
-            </p>
 
             <div className={styles.numberRow}>
               <label>
@@ -510,12 +504,17 @@ const RankMyPreferences = ({ vagas, colocados }) => {
               realistically land, and the likelihood panel below draws a random number within that range on every
               trial, so a wider spread means more variability (and less certainty) in the odds shown.
             </p>
-
             {!myNumber && (
               <p className="subtitle">
                 Enter your Golden Ticket Number to see your odds of entering each option ranked below.
               </p>
             )}
+          </div>
+          <div>
+            <h3 className={styles.subheading}>Your ranking ({preferences.length})</h3>
+            <p className="subtitle" style={{ marginTop: 0 }}>
+              Drag to reorder, or use the arrows. This is your working sketch: add, remove and reshuffle freely.
+            </p>
 
             <ol className={styles.rankList}>
               {preferences.map((p, i) => {
