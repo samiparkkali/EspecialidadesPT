@@ -15,6 +15,7 @@ overwritten); see CLAUDE.md's "keep source columns" guidance.
 from __future__ import annotations
 
 import csv
+import difflib
 import re
 import unicodedata
 from pathlib import Path
@@ -401,6 +402,28 @@ def canonicalize(raw_institution: str) -> str:
         for pattern in patterns:
             if _match_key(pattern) in match_text:
                 return _OVERRIDES.get(canonical.upper(), canonical.upper())
+
+    # Substring matching above requires an intact contiguous run of the
+    # pattern text, which some colocados PDFs' character-level OCR noise
+    # destroys (e.g. "Centro Hospitalar Universitário de São 2030, E.P.E."
+    # for São João) -- these rows were silently orphaned into their own
+    # one-off "canonical" name instead of merging with the real hospital,
+    # which understated that hospital's placement count. A same-length
+    # fuzzy match against every CANONICAL_MAP pattern recovers most of
+    # these; 0.80 and a 15-char floor were picked by checking every match
+    # produced against the real orphan names in colocados.csv (see
+    # `python find_institution_clusters.py`-style audit in EXTRACTION_FINDINGS.md)
+    # -- below that, short/generic fragments ("HOSPITAL" alone, "PENA")
+    # start fuzzy-matching to the wrong hospital.
+    if len(match_text) >= 15:
+        best_canonical, best_ratio = None, 0.0
+        for canonical, patterns in CANONICAL_MAP.items():
+            for pattern in patterns:
+                ratio = difflib.SequenceMatcher(None, match_text, _match_key(pattern)).ratio()
+                if ratio > best_ratio:
+                    best_canonical, best_ratio = canonical, ratio
+        if best_ratio >= 0.80:
+            return _OVERRIDES.get(best_canonical.upper(), best_canonical.upper())
 
     result = _normalize_formatting(normalized).upper()
     return _OVERRIDES.get(result, result)
