@@ -73,6 +73,25 @@ CANONICAL_MAP: dict[str, list[str]] = {
         "ULS Litoral Alentejano",
         "ULS do Litoral Alentejano",
     ],
+    # These 4 ULS names are already their own post-reform canonical form (no
+    # renamed predecessor to fold in) -- but some rows spell them with a
+    # trailing ", E.P.E." and others without, which the generic fallback
+    # formatting doesn't strip, so without an entry here they'd split into
+    # two distinct canonical names and silently break the Rank My
+    # Preferences cutoff lookup (built from whichever spelling colocados
+    # happens to use) for combos sourced from vagas' other spelling.
+    "ULS Castelo Branco": ["ULS Castelo Branco"],
+    "ULS Alto Minho": ["ULS Alto Minho"],
+    "ULS Baixo Alentejo": ["ULS Baixo Alentejo"],
+    "ULS Nordeste": ["ULS Nordeste"],
+    # Some years drop the "E.P.E."/"do" entirely, which otherwise left this
+    # hospital split into two distinct canonical names across years and broke
+    # the Rank My Preferences cutoff lookup (built from colocados' "with
+    # E.P.E." spelling) for combos sourced from vagas' "without E.P.E." rows.
+    "Hospital Divino Espírito Santo de Ponta Delgada": [
+        "Hospital Divino Espírito Santo de Ponta Delgada",
+        "Hospital do Divino Espírito Santo de Ponta Delgada",
+    ],
     "ULS São João": [
         "Centro Hospitalar Universitário de São João",
         "ULS São João",
@@ -388,7 +407,12 @@ def canonicalize(raw_institution: str) -> str:
     # would swallow "ULS Matosinhos - USF Foo" into the parent's canonical
     # name, silently losing the clinic-level granularity that MGF depends on.
     if (clinic_match := _CLINIC_SUFFIX.search(normalized)) is not None:
-        result = _normalize_formatting(clinic_match.group(0)).upper()
+        # Some rows name the clinic in brackets after the parent entity, e.g.
+        # "ULS de Lisboa Ocidental, E.P.E. [USP Cascais]" -- the suffix regex
+        # greedily matches to end of string, so strip a trailing "]" left over
+        # from that bracket.
+        clinic_name = clinic_match.group(0).rstrip("]").rstrip()
+        result = _normalize_formatting(clinic_name).upper()
         return _OVERRIDES.get(result, result)
     if (glitched_match := _CLINIC_SUFFIX_GLITCHED.search(normalized)) is not None:
         result = _normalize_formatting("USF" + glitched_match.group(0)[3:]).upper()

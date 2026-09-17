@@ -70,17 +70,18 @@ const sampleCutoff = (cutoffsByKey, institutionsByCombo, specialty, regionKey, i
 };
 
 // Runs the full likelihood estimate: each trial draws your own number as
-// myNumber +/- the spread (your own uncertainty about where you'll land)
-// and, for each ranked option in order, a plausible cutoff sampled from that
-// option's own year-to-year history -- you enter the first option in your
-// list whose sampled cutoff is at or above your drawn number, same "best
-// number picks first" logic as the real process, just driven by real
-// historical variance instead of a synthetic shared-preference competitor pool.
+// myNumber +/- the spread (your own uncertainty about where you'll land) and
+// samples a plausible cutoff for every ranked option from that option's own
+// year-to-year history. Each option's displayed pct is its own MARGINAL odds
+// of admitting your drawn number -- independent of the other options on your
+// list -- so a safe, low-cutoff option near the bottom of your list still
+// correctly shows near-100%, even though in practice you'd already have been
+// placed into an easier, higher-ranked option first. That "already placed
+// higher up" effect is instead summarized once, in notPlacedPct: the chance
+// your number fails to clear EVERY ranked option's cutoff in the same trial.
 const computeLikelihood = (preferences, cutoffsByKey, institutionsByCombo, myNumber, offset, maxOrdering) => {
   const perOptionHits = new Array(preferences.length).fill(0);
-  const perOptionHasData = preferences.map(
-    (p) => sampleCutoff(cutoffsByKey, institutionsByCombo, p.specialty, p.regionKey, p.institution) !== null
-  );
+  const perOptionTrials = new Array(preferences.length).fill(0);
   let notPlaced = 0;
   let undecided = 0;
   for (let t = 0; t < LIKELIHOOD_TRIALS; t++) {
@@ -88,28 +89,30 @@ const computeLikelihood = (preferences, cutoffsByKey, institutionsByCombo, myNum
       maxOrdering,
       Math.max(1, myNumber + Math.round((Math.random() * 2 - 1) * offset))
     );
-    let placedRank = null;
+    let placedAny = false;
     let anyData = false;
     for (let i = 0; i < preferences.length; i++) {
       const p = preferences[i];
       const cutoff = sampleCutoff(cutoffsByKey, institutionsByCombo, p.specialty, p.regionKey, p.institution);
       if (cutoff === null) continue;
       anyData = true;
+      perOptionTrials[i] += 1;
       if (drawnNumber <= cutoff) {
-        placedRank = i;
-        break;
+        perOptionHits[i] += 1;
+        placedAny = true;
       }
     }
-    if (placedRank !== null) perOptionHits[placedRank] += 1;
-    else if (anyData) notPlaced += 1;
-    else undecided += 1;
+    if (!placedAny) {
+      if (anyData) notPlaced += 1;
+      else undecided += 1;
+    }
   }
   const decided = LIKELIHOOD_TRIALS - undecided;
   return {
     perOption: preferences.map((p, i) => ({
       ...p,
-      hasData: perOptionHasData[i],
-      pct: decided ? Math.round((perOptionHits[i] / decided) * 100) : 0,
+      hasData: perOptionTrials[i] > 0,
+      pct: perOptionTrials[i] ? Math.round((perOptionHits[i] / perOptionTrials[i]) * 100) : 0,
     })),
     notPlacedPct: decided ? Math.round((notPlaced / decided) * 100) : 0,
     noDataAtAll: decided === 0,
