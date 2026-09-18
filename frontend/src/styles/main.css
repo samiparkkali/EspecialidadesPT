@@ -43,6 +43,22 @@ body {
   margin-bottom: 1.25rem;
 }
 
+/* Tab bar plus the small language toggle beside it. The toggle sits outside
+   Tabs.jsx's own sticky/pointer-events handling, so it stays a plain sibling
+   here rather than being folded into that component's markup. */
+.tab-bar-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 0.5rem;
+  position: relative;
+}
+
+.tab-bar-row > :first-child {
+  flex: 1;
+  min-width: 0;
+}
+
 h1 {
   font-size: clamp(1.6rem, 4vw, 2.4rem);
   font-weight: 700;

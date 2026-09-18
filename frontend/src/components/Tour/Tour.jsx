@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { TOUR_STEPS } from './tourSteps';
+import { buildTourSteps } from './tourSteps';
 import { undoRankDemo } from './rankDemo';
+import { useLanguage } from '../../i18n/LanguageContext';
 import styles from './Tour.module.css';
 
 const STORAGE_KEY = 'tour-seen';
@@ -77,6 +78,8 @@ const placeTooltip = (rect, viewport, height = TOOLTIP_HEIGHT_ESTIMATE) => {
 };
 
 const Tour = ({ activeTab, onChangeTab }) => {
+  const { t } = useLanguage();
+  const TOUR_STEPS = useMemo(() => buildTourSteps(t), [t]);
   const [phase, setPhase] = useState(() => (hasSeenTour() ? 'idle' : 'prompt'));
   const [stepIndex, setStepIndex] = useState(0);
   const [rect, setRect] = useState(null);
@@ -165,19 +168,19 @@ const Tour = ({ activeTab, onChangeTab }) => {
   return (
     <>
       <button type="button" className={styles.restartButton} onClick={startTour}>
-        <span aria-hidden="true">🧭</span> Take a tour
+        <span aria-hidden="true">🧭</span> {t.tour.restartButton}
       </button>
 
       {phase === 'prompt' && (
         <div className={styles.promptOverlay} role="dialog" aria-modal="true">
           <div className={styles.promptCard}>
-            <h2 className={styles.promptTitle}>Want a quick tour of the site?</h2>
+            <h2 className={styles.promptTitle}>{t.tour.promptTitle}</h2>
             <p className="subtitle">
-              We'll walk through the tabs, filters, charts and the ranking sketchboard in about a minute.
+              {t.tour.promptText}
             </p>
             <div className={styles.promptActions}>
-              <button type="button" onClick={startTour}>Yes, show me</button>
-              <button type="button" onClick={dismissPrompt}>No thanks</button>
+              <button type="button" onClick={startTour}>{t.tour.promptYes}</button>
+              <button type="button" onClick={dismissPrompt}>{t.tour.promptNo}</button>
             </div>
           </div>
         </div>
@@ -202,13 +205,13 @@ const Tour = ({ activeTab, onChangeTab }) => {
             <h3 className={styles.tooltipTitle}>{step.title}</h3>
             <p className={styles.tooltipText}>{step.text}</p>
             <div className={styles.tooltipControls}>
-              <button type="button" onClick={skipTour} className={styles.skipButton}>Skip</button>
+              <button type="button" onClick={skipTour} className={styles.skipButton}>{t.tour.skip}</button>
               <div className={styles.navButtons}>
                 <button type="button" onClick={() => goToStep(stepIndex - 1)} disabled={stepIndex === 0}>
-                  Back
+                  {t.tour.back}
                 </button>
                 <button type="button" onClick={() => goToStep(stepIndex + 1)}>
-                  {stepIndex === TOUR_STEPS.length - 1 ? 'Finish' : 'Next'}
+                  {stepIndex === TOUR_STEPS.length - 1 ? t.tour.finish : t.tour.next}
                 </button>
               </div>
             </div>

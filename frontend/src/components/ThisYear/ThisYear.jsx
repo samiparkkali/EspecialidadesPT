@@ -1,9 +1,11 @@
 import { Fragment, useMemo, useState } from 'react';
 import PortugalMap from '../PortugalMap/PortugalMap';
+import { useLanguage } from '../../i18n/LanguageContext';
 
 // Shows the latest loaded year region by region; a new year becomes
 // "latest" automatically once the pipeline adds it to vagas.json.
 const ThisYear = ({ vagas }) => {
+  const { t } = useLanguage();
   const [selectedRegion, setSelectedRegion] = useState('');
   const [selectedSpecialty, setSelectedSpecialty] = useState('');
 
@@ -71,10 +73,7 @@ const ThisYear = ({ vagas }) => {
   if (!latestYear) {
     return (
       <div className="card">
-        <p className="subtitle">
-          This year's official seat map hasn't been added yet. It'll show up
-          here as soon as it's released and run through the pipeline.
-        </p>
+        <p className="subtitle">{t.thisYear.noYearData}</p>
       </div>
     );
   }
@@ -82,11 +81,8 @@ const ThisYear = ({ vagas }) => {
   return (
     <>
       <div className="card" data-tour="portugal-map">
-        <h2>Seats available for {latestYear}</h2>
-        <p className="subtitle">
-          Click a region on the map to filter. This is the
-          latest year currently loaded.
-        </p>
+        <h2>{t.thisYear.seatsAvailable(latestYear)}</h2>
+        <p className="subtitle">{t.thisYear.mapHint}</p>
         <PortugalMap
           selected={selectedRegion}
           onSelect={selectRegion}
@@ -96,15 +92,17 @@ const ThisYear = ({ vagas }) => {
 
       <div className="card">
         <h2>
-          Seats by specialty
-          {selectedRegion ? ` in ${selectedRegion.replace(/-/g, ' ').toUpperCase()}` : ' (all of Portugal)'}
+          {t.thisYear.seatsBySpecialty}
+          {selectedRegion
+            ? t.thisYear.seatsBySpecialtyIn(selectedRegion.replace(/-/g, ' ').toUpperCase())
+            : t.thisYear.seatsBySpecialtyAll}
         </h2>
-        <p className="subtitle">Click a specialty to see which hospitals offer it here.</p>
+        <p className="subtitle">{t.thisYear.specialtyHint}</p>
         <table>
           <thead>
             <tr>
-              <th>Specialty</th>
-              <th>Seats</th>
+              <th>{t.thisYear.tableSpecialty}</th>
+              <th>{t.thisYear.tableSeats}</th>
             </tr>
           </thead>
           <tbody>
@@ -125,8 +123,8 @@ const ThisYear = ({ vagas }) => {
                         <table style={{ margin: '0.25rem 0 0.75rem 1.5rem', width: 'calc(100% - 1.5rem)' }}>
                           <thead>
                             <tr>
-                              <th>Institution</th>
-                              <th>Seats</th>
+                              <th>{t.thisYear.tableInstitution}</th>
+                              <th>{t.thisYear.tableSeats}</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -146,7 +144,7 @@ const ThisYear = ({ vagas }) => {
             })}
             {bySpecialty.length === 0 && (
               <tr>
-                <td colSpan={2}>No data for this region yet.</td>
+                <td colSpan={2}>{t.thisYear.noRegionData}</td>
               </tr>
             )}
           </tbody>

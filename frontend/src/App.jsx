@@ -9,11 +9,13 @@ import RankMyPreferences from './components/RankMyPreferences/RankMyPreferences'
 import SpecialtyStats from './components/SpecialtyStats/SpecialtyStats';
 import Spinner from './components/Spinner/Spinner';
 import Tour from './components/Tour/Tour';
-
-// Single source of truth for the site name -- mirrored to the tab title since index.html's <title> is static.
-const SITE_TITLE = 'Internato Impossible';
+import LanguageToggle from './components/LanguageToggle/LanguageToggle';
+import { useLanguage } from './i18n/LanguageContext';
 
 function App() {
+  const { t } = useLanguage();
+  // Single source of truth for the site name -- mirrored to the tab title since index.html's <title> is static.
+  const SITE_TITLE = t.app.siteTitle;
   const { data: vagas, error: vagasError } = useDataset('vagas.json');
   const { data: colocados, error: colocadosError } = useDataset('colocados.json');
 
@@ -39,17 +41,17 @@ function App() {
 
   const TABS = useMemo(
     () => [
-      { id: 'overview', label: 'Overview', shortLabel: 'Overview' },
-      { id: 'this-year', label: "This Year's Seats", shortLabel: latestYear ? `Year ${latestYear}` : 'This Year' },
-      { id: 'specialty-stats', label: 'Specialty Statistics', shortLabel: 'Statistics' },
-      { id: 'rank-preferences', label: 'Rank My Preferences', shortLabel: 'Ranking' },
+      { id: 'overview', label: t.tabs.overview.label, shortLabel: t.tabs.overview.shortLabel },
+      { id: 'this-year', label: t.tabs.thisYear.label, shortLabel: t.tabs.thisYear.shortLabel(latestYear) },
+      { id: 'specialty-stats', label: t.tabs.specialtyStats.label, shortLabel: t.tabs.specialtyStats.shortLabel },
+      { id: 'rank-preferences', label: t.tabs.rankPreferences.label, shortLabel: t.tabs.rankPreferences.shortLabel },
     ],
-    [latestYear]
+    [latestYear, t]
   );
 
   useEffect(() => {
     document.title = SITE_TITLE;
-  }, []);
+  }, [SITE_TITLE]);
 
   // Swipe left/right between tabs, ignored if the touch started on something horizontally scrollable (chart/table).
   const touchStart = useRef(null);
@@ -59,16 +61,16 @@ function App() {
       touchStart.current = null;
       return;
     }
-    const t = e.touches[0];
-    touchStart.current = { x: t.clientX, y: t.clientY };
+    const touch = e.touches[0];
+    touchStart.current = { x: touch.clientX, y: touch.clientY };
   };
   const handleTouchEnd = (e) => {
     const start = touchStart.current;
     touchStart.current = null;
     if (!start) return;
-    const t = e.changedTouches[0];
-    const dx = t.clientX - start.x;
-    const dy = t.clientY - start.y;
+    const touch = e.changedTouches[0];
+    const dx = touch.clientX - start.x;
+    const dy = touch.clientY - start.y;
     if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
     const idx = TABS.findIndex((tab) => tab.id === activeTab);
     if (idx === -1) return;
@@ -116,25 +118,23 @@ function App() {
   }, [vagas, specialty, institution]);
 
   if (vagasError || colocadosError) {
-    return <p>Failed to load data: {String(vagasError || colocadosError)}</p>;
+    return <p>{t.app.loadError(String(vagasError || colocadosError))}</p>;
   }
 
   if (!vagas || !colocados) {
-    return <Spinner label="Loading seat and placement data..." />;
+    return <Spinner label={t.app.loading} />;
   }
 
   return (
     <>
       <h1>{SITE_TITLE}</h1>
-      <p className="subtitle">
-        It&apos;s a beautiful day to pick the specialty that will one day let
-        you retire early and become a happy plumber. Seat offers and
-        placements from Portugal&apos;s Internato Médico, by specialty,
-        institution and year, extracted from the official ACSS notices.
-      </p>
+      <p className="subtitle">{t.app.subtitle}</p>
 
       <div className="tabs-sticky-region">
-      <Tabs tabs={TABS} active={activeTab} onChange={setActiveTab} />
+      <div className="tab-bar-row">
+        <Tabs tabs={TABS} active={activeTab} onChange={setActiveTab} />
+        <LanguageToggle />
+      </div>
       <div className="tour-row">
         <Tour activeTab={activeTab} onChangeTab={setActiveTab} />
       </div>
@@ -177,9 +177,9 @@ function App() {
       </div>
 
       <footer className="site-footer">
-        &copy; {new Date().getFullYear()} All rights reserved. Engineered by{' '}
+        {t.app.footerPrefix(new Date().getFullYear())}{' '}
         <a href="https://parkkali-website.vercel.app/" target="_blank" rel="noopener noreferrer">
-          Sami Parkkali
+          {t.app.footerAuthor}
         </a>
       </footer>
     </>

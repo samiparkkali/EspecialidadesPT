@@ -2,6 +2,7 @@ import { useMemo, useRef, useState } from 'react';
 import SearchableSelect from '../SearchableSelect/SearchableSelect';
 import { colorForRegion } from '../../utils/regionColors';
 import { regionLabel } from '../../utils/regionLabels';
+import { useLanguage } from '../../i18n/LanguageContext';
 import styles from './RankMyPreferences.module.css';
 
 const LIKELIHOOD_TRIALS = 1000;
@@ -109,6 +110,7 @@ const institutionBreakdownFor = (institutions, specialty, cutoffsByKey, myNumber
   });
 
 const RankMyPreferences = ({ vagas, colocados }) => {
+  const { t } = useLanguage();
   const [preferences, setPreferences] = useState([]);
   const [expandedCombo, setExpandedCombo] = useState(null);
   const [myOrderingNumber, setMyOrderingNumber] = useState('');
@@ -389,7 +391,7 @@ const RankMyPreferences = ({ vagas, colocados }) => {
     return (
       <div className="card">
         <p className="subtitle">
-          No institution-level seat data loaded yet, so preferences can&apos;t be built.
+          {t.rankMyPreferences.noYearData}
         </p>
       </div>
     );
@@ -398,40 +400,35 @@ const RankMyPreferences = ({ vagas, colocados }) => {
   return (
     <>
       <div className="card" data-tour="rank-preferences">
-        <h2>Rank My Preferences</h2>
+        <h2>{t.rankMyPreferences.heading}</h2>
         <p className="subtitle">
-          A sketchboard for thinking through your "ordem de colocação" (Golden Ticket Number) choices. Filter and
-          browse specialty/region/institution options below, click to add them to your ranking (its position shows
-          right on the button as #1, #2, and so on), and click it again to remove it. There&apos;s no required
-          minimum, and on a wider screen you can also drag or arrow-key entries into a different order in the
-          ranking list below. Seats and recent Golden Ticket Number cutoffs from {latestYear} and prior years are
-          shown next to each option so you can judge how realistic a spot is for your own number.
+          {t.rankMyPreferences.introTemplate(latestYear)}
         </p>
 
         <div className={styles.rankLayout}>
           <div className={styles.filterRow} data-tour="rank-filters">
             <SearchableSelect
-              label="Specialty"
+              label={t.filters.specialty}
               options={allSpecialties}
               value={specialtyFilter}
               onChange={setSpecialtyFilter}
-              placeholder="Filter specialty..."
+              placeholder={t.rankMyPreferences.specialtyFilterPlaceholder}
               multiple
             />
             <SearchableSelect
-              label="Region"
+              label={t.filters.region}
               options={allRegions}
               value={regionFilter}
               onChange={setRegionFilter}
-              placeholder="Filter region..."
+              placeholder={t.rankMyPreferences.regionFilterPlaceholder}
               getLabel={regionLabel}
               multiple
             />
             <label className={styles.textFilter}>
-              Search
+              {t.rankMyPreferences.searchLabel}
               <input
                 type="text"
-                placeholder="Specialty or region..."
+                placeholder={t.rankMyPreferences.searchPlaceholder}
                 value={comboFilter}
                 onChange={(e) => setComboFilter(e.target.value)}
               />
@@ -440,7 +437,7 @@ const RankMyPreferences = ({ vagas, colocados }) => {
 
           <div className={styles.browseSection}>
             <h3 className={styles.subheading}>
-              Browse options ({filteredCombos.length})
+              {t.rankMyPreferences.browseOptions(filteredCombos.length)}
             </h3>
             <div className={styles.comboList} data-tour="rank-browse">
               {filteredCombos.map((combo) => {
@@ -467,7 +464,7 @@ const RankMyPreferences = ({ vagas, colocados }) => {
                         disabled={anyEntryUsed && !regionEntryExists(combo.specialty, combo.regionKey)}
                         aria-label={
                           regionEntryExists(combo.specialty, combo.regionKey)
-                            ? `Remove ${combo.specialty} - ${regionLabel(combo.regionKey)} from your ranking`
+                            ? t.rankMyPreferences.removeFromRanking(`${combo.specialty} - ${regionLabel(combo.regionKey)}`)
                             : undefined
                         }
                       >
@@ -484,9 +481,9 @@ const RankMyPreferences = ({ vagas, colocados }) => {
                           {combo.specialty} - {regionLabel(combo.regionKey)}
                         </span>
                         <span className={styles.comboItemMeta}>
-                          {combo.seats} seats
+                          {combo.seats} {t.rankMyPreferences.seats}
                           {regionCutoff && (
-                            <span className={styles.cutoffTag}> · last cutoffs {regionCutoff}</span>
+                            <span className={styles.cutoffTag}> · {t.rankMyPreferences.lastCutoffs} {regionCutoff}</span>
                           )}
                         </span>
                       </button>
@@ -495,9 +492,9 @@ const RankMyPreferences = ({ vagas, colocados }) => {
                           type="button"
                           className={styles.expandButton}
                           onClick={() => setExpandedCombo(expandedCombo === base ? null : base)}
-                          aria-label="Show institutions"
+                          aria-label={t.rankMyPreferences.showInstitutions}
                         >
-                          {expandedCombo === base ? '▾' : '▸'} institutions
+                          {expandedCombo === base ? '▾' : '▸'} {t.rankMyPreferences.showInstitutions.toLowerCase()}
                         </button>
                       )}
                     </div>
@@ -519,7 +516,7 @@ const RankMyPreferences = ({ vagas, colocados }) => {
                                   ? removePreferenceFor(combo.specialty, combo.regionKey, inst.institution)
                                   : addPreference(combo.specialty, combo.regionKey, inst.institution)
                               }
-                              aria-label={used ? `Remove ${inst.institution} from your ranking` : undefined}
+                              aria-label={used ? t.rankMyPreferences.removeInstitutionFromRanking(inst.institution) : undefined}
                             >
                               <span className={styles.comboItemTitle}>
                                 {used && (
@@ -531,8 +528,8 @@ const RankMyPreferences = ({ vagas, colocados }) => {
                                 {inst.institution}
                               </span>
                               <span className={styles.comboItemMeta}>
-                                {inst.seats} seats
-                                {instCutoff && <span className={styles.cutoffTag}> · last cutoffs {instCutoff}</span>}
+                                {inst.seats} {t.rankMyPreferences.seats}
+                                {instCutoff && <span className={styles.cutoffTag}> · {t.rankMyPreferences.lastCutoffs} {instCutoff}</span>}
                               </span>
                             </button>
                           );
@@ -543,7 +540,7 @@ const RankMyPreferences = ({ vagas, colocados }) => {
                 );
               })}
               {filteredCombos.length === 0 && (
-                <p className="subtitle">No combos match the current filters.</p>
+                <p className="subtitle">{t.rankMyPreferences.noCombosMatch}</p>
               )}
             </div>
           </div>
@@ -551,18 +548,18 @@ const RankMyPreferences = ({ vagas, colocados }) => {
           <div className={styles.numberSection} data-tour="rank-number">
             <div className={styles.numberRow}>
               <label>
-                Your Golden Ticket Number
+                {t.rankMyPreferences.yourOrderingNumber}
                 <input
                   type="number"
                   min="1"
                   required
-                  placeholder="e.g. 1240"
+                  placeholder={t.rankMyPreferences.orderingNumberPlaceholder}
                   value={myOrderingNumber}
                   onChange={(e) => setMyOrderingNumber(e.target.value)}
                 />
               </label>
               <label>
-                Spread around your number (&plusmn;)
+                {t.rankMyPreferences.spreadLabel}
                 <input
                   type="number"
                   min="1"
@@ -572,21 +569,19 @@ const RankMyPreferences = ({ vagas, colocados }) => {
               </label>
             </div>
             <p className="subtitle" style={{ marginTop: 0 }}>
-              Your final Golden Ticket Number always carries some uncertainty. The spread sets how far off it could
-              realistically land, and the likelihood panel below draws a random number within that range on every
-              trial, so a wider spread means more variability (and less certainty) in the odds shown.
+              {t.rankMyPreferences.spreadHint}
             </p>
             {!myNumber && (
               <p className="subtitle">
-                Enter your Golden Ticket Number to see your odds of entering each option ranked below.
+                {t.rankMyPreferences.enterNumberPrompt}
               </p>
             )}
           </div>
 
           <div className={styles.scratchpadSection}>
-            <h3 className={styles.subheading}>Your ranking ({preferences.length})</h3>
+            <h3 className={styles.subheading}>{t.rankMyPreferences.yourRanking(preferences.length)}</h3>
             <p className="subtitle" style={{ marginTop: 0 }}>
-              Drag to reorder, or use the arrows. This is your working sketch: add, remove and reshuffle freely.
+              {t.rankMyPreferences.dragHint}
             </p>
 
             <ol className={styles.rankList} data-tour="rank-list">
@@ -629,12 +624,12 @@ const RankMyPreferences = ({ vagas, colocados }) => {
                           {p.specialty} - {regionLabel(p.regionKey)}
                           {p.institution ? ` - ${p.institution}` : ''}
                         </span>
-                        {cutoff && <span className={styles.cutoffTag}>last cutoffs {cutoff}</span>}
+                        {cutoff && <span className={styles.cutoffTag}>{t.rankMyPreferences.lastCutoffs} {cutoff}</span>}
                       </span>
                       <span className={styles.rankControls}>
-                        <button type="button" onClick={() => movePreference(i, -1)} aria-label="Move up" disabled={i === 0}>&uarr;</button>
-                        <button type="button" onClick={() => movePreference(i, 1)} aria-label="Move down" disabled={i === preferences.length - 1}>&darr;</button>
-                        <button type="button" onClick={() => removePreference(i)} aria-label="Remove">&times;</button>
+                        <button type="button" onClick={() => movePreference(i, -1)} aria-label={t.rankMyPreferences.moveUp} disabled={i === 0}>&uarr;</button>
+                        <button type="button" onClick={() => movePreference(i, 1)} aria-label={t.rankMyPreferences.moveDown} disabled={i === preferences.length - 1}>&darr;</button>
+                        <button type="button" onClick={() => removePreference(i)} aria-label={t.rankMyPreferences.remove}>&times;</button>
                       </span>
                     </div>
                     {canBreakdown && (
@@ -643,14 +638,13 @@ const RankMyPreferences = ({ vagas, colocados }) => {
                           <div key={inst.institution} className={styles.institutionItem} style={{ cursor: 'default' }}>
                             <span className={styles.comboItemTitle}>{inst.institution}</span>
                             <span className={styles.comboItemMeta}>
-                              {inst.seats} seats
+                              {inst.seats} {t.rankMyPreferences.seats}
                               {inst.cutoffText && (
-                                <span className={styles.cutoffTag}> · last cutoffs {inst.cutoffText}</span>
+                                <span className={styles.cutoffTag}> · {t.rankMyPreferences.lastCutoffs} {inst.cutoffText}</span>
                               )}
                               {inst.pct !== null && (
                                 <span className={styles.cutoffTag} style={{ color: colorForPct(inst.pct) }}>
-                                  {' '}
-                                  · ~{inst.pct}% chance of entering
+                                  {t.rankMyPreferences.chanceOfEntering(inst.pct)}
                                 </span>
                               )}
                             </span>
@@ -662,7 +656,7 @@ const RankMyPreferences = ({ vagas, colocados }) => {
                 );
               })}
               {preferences.length === 0 && (
-                <p className="subtitle">Nothing sketched yet. Click an option above to start.</p>
+                <p className="subtitle">{t.rankMyPreferences.nothingSketched}</p>
               )}
             </ol>
           </div>
@@ -670,24 +664,18 @@ const RankMyPreferences = ({ vagas, colocados }) => {
 
         {likelihood && likelihood.noDataAtAll && (
           <p className="subtitle">
-            None of your ranked options have any historical Golden Ticket Number data to estimate odds from.
+            {t.rankMyPreferences.noDataAtAll}
           </p>
         )}
 
         {likelihood && !likelihood.noDataAtAll && (
           <div className={styles.likelihoodPanel} data-tour="rank-likelihood">
             <h4 className={styles.subheading} style={{ marginBottom: '0.35rem' }}>
-              Likelihood of entering each option ({LIKELIHOOD_TRIALS} trials, your number {myNumber} &plusmn;{' '}
-              {clampedOffset}, cutoffs sampled from each option&apos;s own year-to-year history)
-              <span className={styles.infoIcon} tabIndex={0} role="note" aria-label="How these percentages are calculated">
+              {t.rankMyPreferences.likelihoodHeading(LIKELIHOOD_TRIALS, myNumber, clampedOffset)}
+              <span className={styles.infoIcon} tabIndex={0} role="note" aria-label={t.rankMyPreferences.likelihoodTooltipLabel}>
                 i
                 <span className={styles.infoTooltip}>
-                  This runs a Monte Carlo simulation: on each of {LIKELIHOOD_TRIALS} trials, it draws a random
-                  ordering number within &plusmn;{clampedOffset} of yours, then for every ranked option randomly
-                  samples one past year's actual cutoff for that specialty/institution. If your drawn number would
-                  have beaten that year's cutoff, the trial counts as a hit for that option. Each option's
-                  percentage is its own hit rate across all trials, independent of the others, so it reflects "if I
-                  only had this one choice" odds rather than a rank-ordered waterfall.
+                  {t.rankMyPreferences.likelihoodTooltip(LIKELIHOOD_TRIALS, clampedOffset)}
                 </span>
               </span>
             </h4>
@@ -713,7 +701,7 @@ const RankMyPreferences = ({ vagas, colocados }) => {
                       <span className={styles.likelihoodLabel}>
                         {i + 1}. {opt.specialty} - {regionLabel(opt.regionKey)}
                         {opt.institution ? ` - ${opt.institution}` : ''}
-                        {!opt.hasData && <span className={styles.cutoffTag}> no historical data</span>}
+                        {!opt.hasData && <span className={styles.cutoffTag}> {t.rankMyPreferences.noHistoricalData}</span>}
                       </span>
                       <span className={styles.likelihoodBarTrack}>
                         <span
@@ -731,14 +719,13 @@ const RankMyPreferences = ({ vagas, colocados }) => {
                           <div key={inst.institution} className={styles.institutionItem} style={{ cursor: 'default' }}>
                             <span className={styles.comboItemTitle}>{inst.institution}</span>
                             <span className={styles.comboItemMeta}>
-                              {inst.seats} seats
+                              {inst.seats} {t.rankMyPreferences.seats}
                               {inst.cutoffText && (
-                                <span className={styles.cutoffTag}> · last cutoffs {inst.cutoffText}</span>
+                                <span className={styles.cutoffTag}> · {t.rankMyPreferences.lastCutoffs} {inst.cutoffText}</span>
                               )}
                               {inst.pct !== null && (
                                 <span className={styles.cutoffTag} style={{ color: colorForPct(inst.pct) }}>
-                                  {' '}
-                                  · ~{inst.pct}% chance of entering
+                                  {t.rankMyPreferences.chanceOfEntering(inst.pct)}
                                 </span>
                               )}
                             </span>
@@ -751,7 +738,7 @@ const RankMyPreferences = ({ vagas, colocados }) => {
               })}
             </ul>
             <p className="subtitle" style={{ marginTop: '0.4rem' }}>
-              Not placed by any ranked option (with data): {likelihood.notPlacedPct}% of draws.
+              {t.rankMyPreferences.notPlaced(likelihood.notPlacedPct)}
             </p>
           </div>
         )}

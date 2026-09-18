@@ -1,4 +1,5 @@
 import styles from './Evolution.module.css';
+import { useLanguage } from '../../i18n/LanguageContext';
 
 // Simple least-squares linear fit to project next year's total -- a visual trend cue, not a real forecast.
 function predictNext(points) {
@@ -18,8 +19,9 @@ function predictNext(points) {
 }
 
 const Evolution = ({ points }) => {
+  const { t } = useLanguage();
   if (!points.length) {
-    return <p className="subtitle">No data for the selected filters.</p>;
+    return <p className="subtitle">{t.evolution.noData}</p>;
   }
 
   const predicted = predictNext(points);
@@ -40,7 +42,7 @@ const Evolution = ({ points }) => {
 
   return (
     <div className="card" data-tour="evolution-chart">
-      <h2 className={styles.title}>Seats by year</h2>
+      <h2 className={styles.title}>{t.evolution.title}</h2>
       <div className={styles.chartScroll} data-h-scroll>
       <svg viewBox={`0 0 ${width} ${height + 24}`} className={styles.chart}>
         {allPoints.map((p, i) => {
@@ -83,9 +85,7 @@ const Evolution = ({ points }) => {
       </svg>
       </div>
       {predicted && (
-        <p className="subtitle">
-          * {predicted.year} is a projection (simple trend line over the loaded years), not real data yet.
-        </p>
+        <p className="subtitle">{t.evolution.projectionNote(predicted.year)}</p>
       )}
     </div>
   );

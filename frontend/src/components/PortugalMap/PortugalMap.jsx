@@ -1,5 +1,6 @@
 import styles from './PortugalMap.module.css';
 import { colorForRegion } from '../../utils/regionColors';
+import { useLanguage } from '../../i18n/LanguageContext';
 
 // Real ARS (health region) boundaries: Eurostat GISCO's NUTS3 2021 shapes
 // grouped into the 5 mainland ARS regions, simplified and projected to this
@@ -71,6 +72,7 @@ const acoresInsetX = (CANVAS_WIDTH - insetsTotalWidth) / 2;
 const madeiraInsetX = acoresInsetX + acoresInsetWidth + INSET_GAP;
 
 const PortugalMap = ({ selected, onSelect, counts }) => {
+  const { t } = useLanguage();
   const isActive = (key) => selected === key;
   const seatsFor = (key) => counts?.[key] ?? 0;
 
@@ -85,13 +87,13 @@ const PortugalMap = ({ selected, onSelect, counts }) => {
         viewBox={`0 0 ${CANVAS_WIDTH} ${CANVAS_HEIGHT}`}
         className={styles.svg}
         role="img"
-        aria-label="Map of Portugal by health region"
+        aria-label={t.portugalMap.ariaLabel}
       >
         <g transform={`translate(${MAINLAND_X}, 0)`}>
           {REGIONS.map((r) => (
             <g key={r.key} onClick={() => toggle(r.key)} className={styles.clickable}>
               <path d={r.d} className={regionClass(r.key)} style={{ '--region-fill': colorForRegion(r.key) }} />
-              <title>{r.label} ({seatsFor(r.key)} seats)</title>
+              <title>{r.label} ({seatsFor(r.key)} {t.portugalMap.seatsSuffix})</title>
             </g>
           ))}
           {REGIONS.map((r) => (
@@ -119,7 +121,7 @@ const PortugalMap = ({ selected, onSelect, counts }) => {
               <svg x={x} y={INSETS_Y} width={width} height={INSET_HEIGHT} viewBox={`0 0 ${island.viewport[0]} ${island.viewport[1]}`}>
                 <g onClick={() => toggle(key)} className={styles.clickable}>
                   <path d={island.d} className={regionClass(key)} style={{ '--region-fill': colorForRegion(key) }} />
-                  <title>{island.label} ({seatsFor(key)} seats)</title>
+                  <title>{island.label} ({seatsFor(key)} {t.portugalMap.seatsSuffix})</title>
                 </g>
                 <text
                   x={island.labelPos.x}

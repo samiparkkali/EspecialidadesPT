@@ -1,11 +1,16 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import SearchableSelect from '../SearchableSelect/SearchableSelect';
 import { colorForRegion } from '../../utils/regionColors';
+import { useLanguage } from '../../i18n/LanguageContext';
 import styles from './SpecialtyStats.module.css';
 
-const regionLabel = (regionKey) => (regionKey ? regionKey.replace(/-/g, ' ').toUpperCase() : 'UNMAPPED');
 
 const SpecialtyStats = ({ vagas }) => {
+  const { t } = useLanguage();
+  const regionLabel = useCallback(
+    (regionKey) => (regionKey ? regionKey.replace(/-/g, ' ').toUpperCase() : t.specialtyStats.unmapped),
+    [t]
+  );
   const specialties = useMemo(() => [...new Set(vagas.map((r) => r.specialty))].sort(), [vagas]);
   const [specialty, setSpecialty] = useState(
     () => specialties[Math.floor(Math.random() * specialties.length)] || ''
@@ -92,12 +97,12 @@ const SpecialtyStats = ({ vagas }) => {
         totalSeats: institutions.reduce((sum, inst) => sum + inst.seats, 0),
       }))
       .sort((a, b) => regionLabel(a.regionKey).localeCompare(regionLabel(b.regionKey)));
-  }, [rows, latestInstitutionYear, institutionYears]);
+  }, [rows, latestInstitutionYear, institutionYears, regionLabel]);
 
   if (!specialties.length) {
     return (
       <div className="card">
-        <p className="subtitle">No seat data loaded yet.</p>
+        <p className="subtitle">{t.specialtyStats.noData}</p>
       </div>
     );
   }
@@ -112,23 +117,22 @@ const SpecialtyStats = ({ vagas }) => {
   return (
     <>
       <div className="card" data-tour="specialty-stats">
-        <h2>Specialty Statistics</h2>
+        <h2>{t.specialtyStats.heading}</h2>
         <p className="subtitle">
-          Pick a specialty to see how its total seat count has moved from {years[0] || '...'} to{' '}
-          {years[years.length - 1] || '...'}, and how that count breaks down by region each year.
+          {t.specialtyStats.intro(years[0] || '...', years[years.length - 1] || '...')}
         </p>
         <SearchableSelect
-          label="Specialty"
+          label={t.filters.specialty}
           options={specialties}
           value={specialty}
           onChange={setSpecialty}
-          placeholder="Type to search a specialty..."
+          placeholder={t.specialtyStats.specialtyPlaceholder}
         />
       </div>
 
       {specialty && totalsByYear.length > 0 && (
         <div className="card">
-          <h2 className={styles.chartTitle}>Total seats per year: {specialty}</h2>
+          <h2 className={styles.chartTitle}>{t.specialtyStats.totalPerYear(specialty)}</h2>
           <div className={styles.chartScroll} data-h-scroll>
           <svg viewBox={`0 0 ${width} ${height + 24}`} className={styles.chart}>
             {totalsByYear.map((p, i) => {
@@ -161,8 +165,8 @@ const SpecialtyStats = ({ vagas }) => {
 
       {specialty && totalsByYear.length > 0 && (
         <div className="card">
-          <h2 className={styles.chartTitle}>Breakdown by region: {specialty}</h2>
-          <p className="subtitle">Each bar is one year's seats, stacked by region.</p>
+          <h2 className={styles.chartTitle}>{t.specialtyStats.breakdownByRegion(specialty)}</h2>
+          <p className="subtitle">{t.specialtyStats.breakdownHint}</p>
           <div className={styles.chartScroll} data-h-scroll>
           <svg viewBox={`0 0 ${width} ${height + 24}`} className={styles.chart}>
             {years.map((year, i) => {
@@ -182,7 +186,7 @@ const SpecialtyStats = ({ vagas }) => {
                     return (
                       <g key={regionKey || 'unmapped'}>
                         <rect x={x} y={segY} width={barW} height={segHeight} fill={colorForRegion(regionKey)}>
-                          <title>{regionLabel(regionKey)}: {seats} seats ({year})</title>
+                          <title>{regionLabel(regionKey)}: {seats} {t.thisYear.tableSeats.toLowerCase()} ({year})</title>
                         </rect>
                         <text
                           x={x + barW / 2}
@@ -217,11 +221,10 @@ const SpecialtyStats = ({ vagas }) => {
       {specialty && byInstitutionByRegion.length > 0 && (
         <div className="card">
           <h2 className={styles.chartTitle}>
-            Seats by institution: {specialty}
+            {t.specialtyStats.byInstitution(specialty)}
           </h2>
           <p className="subtitle">
-            Every year with institution-level detail for this specialty, grouped by region and sorted
-            alphabetically by institution.
+            {t.specialtyStats.byInstitutionHint}
           </p>
           {byInstitutionByRegion.map((group) => (
             <details key={group.regionKey || 'unmapped'} className={styles.regionGroup} open>
@@ -231,15 +234,15 @@ const SpecialtyStats = ({ vagas }) => {
               >
                 {regionLabel(group.regionKey)}
                 <span className={styles.regionSummaryMeta}>
-                  {group.institutions.length} institution{group.institutions.length === 1 ? '' : 's'} ·{' '}
-                  {group.totalSeats} seats in {latestInstitutionYear}
+                  {t.specialtyStats.institutionCount(group.institutions.length)} ·{' '}
+                  {group.totalSeats} {t.specialtyStats.seatsInYear(latestInstitutionYear)}
                 </span>
               </summary>
               <div className={styles.tableScroll} data-h-scroll>
                 <table>
                   <thead>
                     <tr>
-                      <th>Institution</th>
+                      <th>{t.specialtyStats.tableInstitution}</th>
                       {institutionYears.map((year) => (
                         <th key={year}>{year}</th>
                       ))}

@@ -1,10 +1,13 @@
 import { useMemo, useState } from 'react';
 import SearchableSelect from '../SearchableSelect/SearchableSelect';
 import { regionLabel } from '../../utils/regionLabels';
+import { useLanguage } from '../../i18n/LanguageContext';
 import styles from './Predict.module.css';
 
 // Cutoffs are shown per-year rather than averaged, since they vary a lot year to year.
-const UNKNOWN_INSTITUTION = 'Institution not recorded (OCR year)';
+// Sentinel key (not shown to users directly) for rows from an OCR year where the
+// institution name wasn't recorded -- the display text for it is translated at render time.
+const UNKNOWN_INSTITUTION = '__unknown_institution__';
 
 const buildCutoffsByYear = (colocados) => {
   const grouped = new Map();
@@ -48,6 +51,7 @@ const buildRegionByInstitution = (vagas) => {
 };
 
 const Predict = ({ vagas, colocados }) => {
+  const { t } = useLanguage();
   const [orderingNumber, setOrderingNumber] = useState('');
   const [offset, setOffset] = useState(String(DEFAULT_OFFSET));
   const [specialtyFilter, setSpecialtyFilter] = useState('');
@@ -100,28 +104,23 @@ const Predict = ({ vagas, colocados }) => {
 
   return (
     <div className="card" data-tour="predict">
-      <h2>What could I get into with this Golden Ticket Number?</h2>
-      <p className="subtitle">
-        Enter your Golden Ticket Number ("ordem de colocação") to see which specialty/institution combinations it
-        would have gotten you into, checked separately against each past year's actual cutoff (the last candidate
-        placed that year) rather than a single blended average. It's a lookup against real history, not a forecast.
-        Results are ordered by average cutoff, lowest (most competitive) first.
-      </p>
+      <h2>{t.predict.heading}</h2>
+      <p className="subtitle">{t.predict.intro}</p>
       <div className="filters-row">
         <label htmlFor="ordering-input">
-          Golden Ticket Number
+          {t.predict.orderingNumberLabel}
           <input
             id="ordering-input"
             type="number"
             min="1"
             value={orderingNumber}
             onChange={(e) => setOrderingNumber(e.target.value)}
-            placeholder="e.g. 1200"
+            placeholder={t.predict.orderingNumberPlaceholder}
           />
         </label>
 
         <label htmlFor="offset-input">
-          Offset (+)
+          {t.predict.offsetLabel}
           <input
             id="offset-input"
             type="number"
@@ -132,14 +131,14 @@ const Predict = ({ vagas, colocados }) => {
         </label>
 
         <SearchableSelect
-          label="Specialty"
+          label={t.filters.specialty}
           options={specialties}
           value={specialtyFilter}
           onChange={setSpecialtyFilter}
         />
 
         <SearchableSelect
-          label="Region"
+          label={t.filters.region}
           options={regions}
           value={regionFilter}
           onChange={setRegionFilter}
@@ -147,38 +146,33 @@ const Predict = ({ vagas, colocados }) => {
         />
       </div>
       {orderingNumber && (
-        <p className="subtitle">
-          "Close call" years use a +{Math.max(0, Number(offset) || 0)} offset:
-          years where your Golden Ticket Number would have needed to be up to
-          that much better to get in, shown separately from actual matches.
-        </p>
+        <p className="subtitle">{t.predict.closeCallNote(Math.max(0, Number(offset) || 0))}</p>
       )}
 
       {results && (
         <>
           {results.length > RESULTS_DISPLAY_LIMIT && (
             <p className="subtitle" style={{ fontSize: '0.72rem' }}>
-              Showing the {RESULTS_DISPLAY_LIMIT} most competitive of {results.length} matches. Narrow with the
-              specialty/region filters above to see the rest.
+              {t.predict.showingLimited(RESULTS_DISPLAY_LIMIT, results.length)}
             </p>
           )}
           <div className={styles.mobileResults}>
             {results.slice(0, RESULTS_DISPLAY_LIMIT).map((r) => (
               <div key={`${r.specialty}|${r.institution}`} className={styles.resultCard}>
                 <div className={styles.resultTitle}>
-                  {r.specialty} - {r.institution}
+                  {r.specialty} - {r.institution === UNKNOWN_INSTITUTION ? t.predict.unknownInstitution : r.institution}
                 </div>
                 <div className={styles.resultMeta}>
-                  Avg cutoff <span className={styles.resultAvg}>{r.avgCutoff}</span>
+                  {t.predict.resultMetaAvgCutoff} <span className={styles.resultAvg}>{r.avgCutoff}</span>
                   {r.eligibleYears.length > 0 &&
-                    ` · in: ${r.eligibleYears.map((y) => `${y.year} (${y.cutoff})`).join(', ')}`}
+                    t.predict.resultMetaIn(r.eligibleYears.map((y) => `${y.year} (${y.cutoff})`).join(', '))}
                   {r.closeYears.length > 0 &&
-                    ` · close: ${r.closeYears.map((y) => `${y.year} (${y.cutoff})`).join(', ')}`}
+                    t.predict.resultMetaClose(r.closeYears.map((y) => `${y.year} (${y.cutoff})`).join(', '))}
                 </div>
               </div>
             ))}
             {results.length === 0 && (
-              <p className="subtitle">No matches for this number with the current data. Maybe try plumbing.</p>
+              <p className="subtitle">{t.predict.noMatches}</p>
             )}
           </div>
 
@@ -186,22 +180,22 @@ const Predict = ({ vagas, colocados }) => {
             <table style={{ minWidth: '620px' }}>
               <thead>
                 <tr>
-                  <th>Specialty</th>
-                  <th>Institution</th>
-                  <th>Years you'd get in</th>
-                  <th>Close calls (+offset)</th>
-                  <th>Average cutoff</th>
+                  <th>{t.predict.tableSpecialty}</th>
+                  <th>{t.predict.tableInstitution}</th>
+                  <th>{t.predict.tableYearsIn}</th>
+                  <th>{t.predict.tableCloseCalls}</th>
+                  <th>{t.predict.tableAvgCutoff}</th>
                 </tr>
               </thead>
               <tbody>
                 {results.slice(0, RESULTS_DISPLAY_LIMIT).map((r) => (
                   <tr key={`${r.specialty}|${r.institution}`}>
                     <td>{r.specialty}</td>
-                    <td>{r.institution}</td>
+                    <td>{r.institution === UNKNOWN_INSTITUTION ? t.predict.unknownInstitution : r.institution}</td>
                     <td>
                       {r.eligibleYears.map((y) => `${y.year} (${y.cutoff})`).join(', ') || '-'}
                       {r.eligibleYears.length > 0 && r.eligibleYears.length < r.totalYears && (
-                        <span className="subtitle"> (of {r.totalYears} years with data)</span>
+                        <span className="subtitle">{t.predict.tableYearsOfData(r.totalYears)}</span>
                       )}
                     </td>
                     <td>{r.closeYears.map((y) => `${y.year} (${y.cutoff})`).join(', ') || '-'}</td>
@@ -210,7 +204,7 @@ const Predict = ({ vagas, colocados }) => {
                 ))}
                 {results.length === 0 && (
                   <tr>
-                    <td colSpan={5}>No matches for this number with the current data. Maybe try plumbing.</td>
+                    <td colSpan={5}>{t.predict.noMatches}</td>
                   </tr>
                 )}
               </tbody>

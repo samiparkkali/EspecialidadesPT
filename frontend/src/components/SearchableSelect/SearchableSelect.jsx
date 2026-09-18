@@ -1,4 +1,5 @@
 import { useId, useRef, useState } from 'react';
+import { useLanguage } from '../../i18n/LanguageContext';
 import styles from './SearchableSelect.module.css';
 
 // Own listbox instead of a native <datalist> -- datalist renders as a
@@ -6,6 +7,7 @@ import styles from './SearchableSelect.module.css';
 // browsers (a "floating box" detached from our styling); this stays a
 // plain, always-same-place panel anchored right under the input.
 const SearchableSelect = ({ label, options, value, onChange, placeholder, getLabel = (o) => o, multiple = false }) => {
+  const { t } = useLanguage();
   const [query, setQuery] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
@@ -99,7 +101,7 @@ const SearchableSelect = ({ label, options, value, onChange, placeholder, getLab
           onFocus={handleFocus}
           onBlur={handleBlur}
           onKeyDown={handleKeyDown}
-          placeholder={placeholder || 'Type to search...'}
+          placeholder={placeholder || t.searchableSelect.defaultPlaceholder}
           role="combobox"
           aria-expanded={isOpen}
           aria-autocomplete="list"
@@ -107,7 +109,7 @@ const SearchableSelect = ({ label, options, value, onChange, placeholder, getLab
         />
         {isOpen && (
           <ul className={styles.listbox} role="listbox">
-            {filtered.length === 0 && <li className={styles.empty}>No matches</li>}
+            {filtered.length === 0 && <li className={styles.empty}>{t.searchableSelect.noMatches}</li>}
             {filtered.map((o, i) => (
               <li
                 key={o}
@@ -131,11 +133,11 @@ const SearchableSelect = ({ label, options, value, onChange, placeholder, getLab
       </div>
       {multiple ? (
         <span className={styles.chipRow}>
-          {selected.length === 0 && <span className={styles.chipMuted}>All</span>}
+          {selected.length === 0 && <span className={styles.chipMuted}>{t.searchableSelect.all}</span>}
           {selected.map((o) => (
             <span key={o} className={styles.chip}>
               {getLabel(o)}
-              <button type="button" onClick={() => removeOne(o)} aria-label={`Remove ${getLabel(o)} from ${label} filter`}>
+              <button type="button" onClick={() => removeOne(o)} aria-label={t.searchableSelect.removeFromFilter(getLabel(o), label)}>
                 &times;
               </button>
             </span>
@@ -144,12 +146,12 @@ const SearchableSelect = ({ label, options, value, onChange, placeholder, getLab
       ) : value ? (
         <span className={styles.chip}>
           {getLabel(value)}
-          <button type="button" onClick={() => onChange('')} aria-label={`Clear ${label} filter`}>
+          <button type="button" onClick={() => onChange('')} aria-label={t.searchableSelect.clearFilter(label)}>
             &times;
           </button>
         </span>
       ) : (
-        <span className={styles.chipMuted}>All</span>
+        <span className={styles.chipMuted}>{t.searchableSelect.all}</span>
       )}
     </label>
   );
