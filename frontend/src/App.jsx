@@ -20,6 +20,7 @@ function App() {
   const { data: colocados, error: colocadosError } = useDataset('colocados.json');
 
   const [activeTab, setActiveTabRaw] = useState('overview');
+  const [tabsStuck, setTabsStuck] = useState(false);
 
   // Every user-initiated tab switch (click or swipe) jumps back to the top
   // of the page, so the new tab's content starts in view instead of
@@ -127,12 +128,12 @@ function App() {
 
   return (
     <>
-      <LanguageToggle />
+      <LanguageToggle dimmed={tabsStuck} />
       <h1>{SITE_TITLE}</h1>
       <p className="subtitle">{t.app.subtitle}</p>
 
       <div className="tabs-sticky-region">
-      <Tabs tabs={TABS} active={activeTab} onChange={setActiveTab} />
+      <Tabs tabs={TABS} active={activeTab} onChange={setActiveTab} onStuckChange={setTabsStuck} />
       <div className="tour-row">
         <Tour activeTab={activeTab} onChangeTab={setActiveTab} />
       </div>

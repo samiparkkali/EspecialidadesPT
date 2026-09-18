@@ -56,6 +56,16 @@
   background: var(--color-surface-raised);
 }
 
+/* .tabs itself has no background (see the comment above) so its invisible
+   side margins don't steal clicks -- but once actually stuck, whatever
+   content is scrolled underneath those margins was visibly bleeding
+   through behind the pill. An opaque page-color backdrop hides that;
+   pointer-events stays none on .tabs, so clicks in the margins still pass
+   through to the content, only the paint layer changes. */
+.tabs.stuck {
+  background: var(--color-bg);
+}
+
 .tab,
 .tabActive {
   background: none;
