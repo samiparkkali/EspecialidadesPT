@@ -1,27 +1,9 @@
 .toggle {
-  position: fixed;
-  top: 0.75rem;
-  left: 0.75rem;
-  z-index: 30;
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
-  padding: 0.25rem 0.5rem;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  background: var(--color-surface);
-  box-shadow: var(--shadow-sm);
-  transition: opacity var(--transition);
-}
-
-/* Once the sticky tab bar is pinned to the top, its full-bleed first tab
-   sits right under this fixed corner spot on narrow/medium viewports --
-   faded (and click-through) here rather than the two visually fighting or
-   the toggle silently eating the tab's tap target. Scrolling back to the
-   top brings it back. */
-.dimmed {
-  opacity: 0;
-  pointer-events: none;
+  gap: 0.25rem;
+  padding: 0.1rem 0.3rem;
+  margin-bottom: 0.5rem;
 }
 
 .button,
@@ -29,9 +11,9 @@
   background: none;
   border: none;
   color: var(--color-text-muted);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-xs);
   font-weight: 600;
-  padding: 0.15rem 0.35rem;
+  padding: 0.1rem 0.3rem;
   cursor: pointer;
   border-radius: var(--radius-sm);
   transition: color var(--transition), background var(--transition);

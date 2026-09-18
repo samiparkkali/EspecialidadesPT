@@ -1,15 +1,11 @@
 import { useLanguage } from '../../i18n/LanguageContext';
 import styles from './LanguageToggle.module.css';
 
-const LanguageToggle = ({ dimmed = false }) => {
+const LanguageToggle = () => {
   const { language, setLanguage, t } = useLanguage();
 
   return (
-    <div
-      className={dimmed ? `${styles.toggle} ${styles.dimmed}` : styles.toggle}
-      role="group"
-      aria-label={t.languageToggle.groupLabel}
-    >
+    <div className={styles.toggle} role="group" aria-label={t.languageToggle.groupLabel}>
       <button
         type="button"
         className={language === 'pt' ? styles.active : styles.button}
