@@ -299,6 +299,17 @@ const RankMyPreferences = ({ vagas, colocados }) => {
     setPreferences(preferences.filter((_, i) => i !== index));
   };
 
+  // Lets a browse-list button double as an "undo" for what it just added, so
+  // removing a wrong pick doesn't require the scratchpad (hidden on mobile).
+  const removePreferenceFor = (specialty, regionKey, institution = null) => {
+    setPreferences((prev) => {
+      const idx = prev.findIndex(
+        (p) => p.specialty === specialty && p.regionKey === regionKey && p.institution === institution
+      );
+      return idx === -1 ? prev : prev.filter((_, i) => i !== idx);
+    });
+  };
+
   const movePreference = (index, delta) => {
     const target = index + delta;
     if (target < 0 || target >= preferences.length) return;
@@ -380,10 +391,10 @@ const RankMyPreferences = ({ vagas, colocados }) => {
         <h2>Rank My Preferences</h2>
         <p className="subtitle">
           A sketchboard for thinking through your "ordem de colocação" (Golden Ticket Number) choices. Filter and
-          browse specialty/region/institution options below, click to add them to your ranking, and freely reorder
-          or remove anything as you think it through: there&apos;s no required minimum. Seats and recent Golden
-          Ticket Number cutoffs from {latestYear} and prior years are shown next to each option so you can judge how
-          realistic a spot is for your own number.
+          browse specialty/region/institution options below, click to add them to your ranking, and click an added
+          option again to remove it (or use the ranking list&apos;s reorder/remove controls): there&apos;s no
+          required minimum. Seats and recent Golden Ticket Number cutoffs from {latestYear} and prior years are
+          shown next to each option so you can judge how realistic a spot is for your own number.
         </p>
 
         <div className={styles.rankLayout}>
@@ -435,11 +446,18 @@ const RankMyPreferences = ({ vagas, colocados }) => {
                         type="button"
                         className={styles.comboItem}
                         style={{ borderLeft: `3px solid ${colorForRegion(combo.regionKey)}` }}
-                        onClick={() => addPreference(combo.specialty, combo.regionKey)}
-                        disabled={anyEntryUsed}
+                        onClick={() => {
+                          if (regionEntryExists(combo.specialty, combo.regionKey)) {
+                            removePreferenceFor(combo.specialty, combo.regionKey, null);
+                          } else if (!anyEntryUsed) {
+                            addPreference(combo.specialty, combo.regionKey);
+                          }
+                        }}
+                        disabled={anyEntryUsed && !regionEntryExists(combo.specialty, combo.regionKey)}
                       >
                         <span className={styles.comboItemTitle}>
                           {combo.specialty} - {regionLabel(combo.regionKey)}
+                          {regionEntryExists(combo.specialty, combo.regionKey) && ' — added, tap to remove'}
                         </span>
                         <span className={styles.comboItemMeta}>
                           {combo.seats} seats
@@ -471,10 +489,17 @@ const RankMyPreferences = ({ vagas, colocados }) => {
                               type="button"
                               key={inst.institution}
                               className={styles.institutionItem}
-                              disabled={regionUsed || used}
-                              onClick={() => addPreference(combo.specialty, combo.regionKey, inst.institution)}
+                              disabled={regionUsed && !used}
+                              onClick={() =>
+                                used
+                                  ? removePreferenceFor(combo.specialty, combo.regionKey, inst.institution)
+                                  : addPreference(combo.specialty, combo.regionKey, inst.institution)
+                              }
                             >
-                              <span className={styles.comboItemTitle}>{inst.institution}</span>
+                              <span className={styles.comboItemTitle}>
+                                {inst.institution}
+                                {used && ' — added, tap to remove'}
+                              </span>
                               <span className={styles.comboItemMeta}>
                                 {inst.seats} seats
                                 {instCutoff && <span className={styles.cutoffTag}> · last cutoffs {instCutoff}</span>}

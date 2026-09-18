@@ -1,6 +1,5 @@
-/* Sticks via its parent .tabs-row (App.jsx), not its own position:sticky --
-   two independently-sticky flex siblings would both pin to top:0 and overlap
-   once the row wraps to two lines on mobile. */
+/* Plain flex sibling of the (sticky) tab bar -- not sticky itself, so it just
+   scrolls away normally instead of floating alongside the tabs. */
 .restartButton {
   flex-shrink: 0;
   background: none;
