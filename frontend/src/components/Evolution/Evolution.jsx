@@ -1,7 +1,6 @@
 import styles from './Evolution.module.css';
 
-// Simple least-squares linear fit over the loaded years to project next
-// year's total -- not a real forecast, just a visual trend cue.
+// Simple least-squares linear fit to project next year's total -- a visual trend cue, not a real forecast.
 function predictNext(points) {
   const n = points.length;
   if (n < 2) return null;
@@ -29,9 +28,7 @@ const Evolution = ({ points }) => {
   const maxSeats = Math.max(...allPoints.map((p) => p.seats), 1);
   const width = 480;
   const height = 160;
-  // Leave headroom above the tallest bar for its value label -- without it,
-  // the max-value bar's label sits right at (or above) the chart's own top
-  // edge and overlaps whatever is rendered above the chart.
+  // Headroom above the tallest bar so its value label doesn't overlap the chart's top edge.
   const topPad = 16;
   const barWidth = width / allPoints.length;
 

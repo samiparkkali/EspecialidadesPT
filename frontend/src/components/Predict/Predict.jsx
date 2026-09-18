@@ -2,8 +2,7 @@ import { useMemo, useState } from 'react';
 import SearchableSelect from '../SearchableSelect/SearchableSelect';
 import { regionLabel } from '../../utils/regionLabels';
 
-// Per specialty/institution, tracks each year's cutoff (last ordering number
-// placed); shown per-year rather than just averaged, since the cutoff varies a lot year to year.
+// Cutoffs are shown per-year rather than averaged, since they vary a lot year to year.
 const UNKNOWN_INSTITUTION = 'Institution not recorded (OCR year)';
 
 const buildCutoffsByYear = (colocados) => {
@@ -70,9 +69,7 @@ const Predict = ({ vagas, colocados }) => {
         const eligibleYears = years
           .filter(([, cutoff]) => cutoff >= n)
           .map(([year, cutoff]) => ({ year, cutoff }));
-        // "Close call": that year's cutoff would need to be up to `margin`
-        // higher -- judged per year, not the average, since one outlier
-        // year can be a near-miss even when the average looks far off.
+        // Judged per year, not the average -- one outlier year can be a near-miss even when the average isn't close.
         const closeYears = years
           .filter(([, cutoff]) => cutoff < n && cutoff >= n - margin)
           .map(([year, cutoff]) => ({ year, cutoff }));

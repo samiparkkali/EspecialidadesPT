@@ -1,9 +1,6 @@
 import { demoFillSearch, demoAddPreference, demoFillNumber } from './rankDemo';
 
-// One entry per stop: which tab it lives on (the tour switches tabs for you)
-// and the data-tour selector added to the real element it points at.
-// `demo`, when present, runs a live example against the real page instead of
-// just describing it -- used on the Rank My Preferences steps.
+// One entry per stop. `demo`, when present, runs a live example against the real page (Rank My Preferences steps).
 export const TOUR_STEPS = [
   {
     tab: 'overview',
@@ -65,7 +62,7 @@ export const TOUR_STEPS = [
     selector: '[data-tour="rank-list"]',
     title: 'Watch it land in your scratchpad',
     demo: demoAddPreference,
-    text: 'Clicking a combo (like the Cirurgia Geral one just filtered) adds it here immediately, as you can see. From here you can drag to reorder, use the arrows, or remove it -- nothing is final.',
+    text: 'Clicking a combo (like the Cirurgia Geral one just filtered) adds it here immediately, as you can see. From here you can drag to reorder, use the arrows, or remove it: nothing is final.',
   },
   {
     tab: 'rank-preferences',

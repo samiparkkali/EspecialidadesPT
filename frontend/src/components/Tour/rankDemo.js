@@ -1,8 +1,6 @@
-// Drives a live example inside Rank My Preferences during the tour, by
-// dispatching real events at real DOM nodes -- the same nodes the user would
-// click/type into -- so the tour shows the actual feature reacting instead
-// of just describing it. Module-level state tracks what the demo itself
-// added so undoRankDemo can remove exactly that and nothing the user typed.
+// Drives a live example inside Rank My Preferences during the tour by dispatching real events at
+// real DOM nodes. Module-level state tracks what the demo added so undoRankDemo can remove exactly
+// that and nothing the user typed.
 
 const setNativeValue = (input, value) => {
   const proto = input.tagName === 'TEXTAREA' ? window.HTMLTextAreaElement.prototype : window.HTMLInputElement.prototype;
@@ -15,12 +13,12 @@ const state = {
   searchFilled: false,
   numberFilled: false,
   preferenceAdded: false,
+  pendingClickTimer: null,
 };
 
 export const DEMO_SPECIALTY = 'Cirurgia Geral';
 export const DEMO_NUMBER = '1500';
 
-// Types the example specialty into the browse search box.
 export const demoFillSearch = () => {
   const input = document.querySelector('[data-tour="rank-filters"] input[type="text"]');
   if (!input || input.value === DEMO_SPECIALTY) return;
@@ -28,11 +26,11 @@ export const demoFillSearch = () => {
   state.searchFilled = true;
 };
 
-// Clicks the first filtered combo to add it to the ranking, demonstrating
-// what "appears in the scratchpad" without the user having to click anything.
 export const demoAddPreference = () => {
   demoFillSearch();
-  window.setTimeout(() => {
+  window.clearTimeout(state.pendingClickTimer);
+  state.pendingClickTimer = window.setTimeout(() => {
+    state.pendingClickTimer = null;
     const buttons = document.querySelectorAll('[data-tour="rank-browse"] button');
     const match = Array.from(buttons).find((b) => b.textContent.includes(DEMO_SPECIALTY));
     if (match && !match.disabled) {
@@ -42,7 +40,6 @@ export const demoAddPreference = () => {
   }, 120);
 };
 
-// Fills in an example Golden Ticket Number so the likelihood panel populates live.
 export const demoFillNumber = () => {
   const input = document.querySelector('[data-tour="rank-number"] input[type="number"]');
   if (!input || input.value === DEMO_NUMBER) return;
@@ -50,9 +47,10 @@ export const demoFillNumber = () => {
   state.numberFilled = true;
 };
 
-// Reverts everything the demo itself changed, leaving any real ranking the
-// user had built (or started building) untouched.
+// Reverts everything the demo changed, leaving any real ranking the user built untouched.
 export const undoRankDemo = () => {
+  window.clearTimeout(state.pendingClickTimer);
+  state.pendingClickTimer = null;
   if (state.preferenceAdded) {
     const removeButtons = document.querySelectorAll('[data-tour="rank-list"] button[aria-label="Remove"]');
     const last = removeButtons[removeButtons.length - 1];

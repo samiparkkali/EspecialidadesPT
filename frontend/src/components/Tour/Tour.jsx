@@ -55,6 +55,10 @@ const Tour = ({ activeTab, onChangeTab }) => {
 
   const step = phase === 'running' ? TOUR_STEPS[stepIndex] : null;
 
+  // Only undoes when leaving the rank-preferences demo range entirely (a tab
+  // switch, finish, or skip) -- stepping back and forth WITHIN it must leave
+  // the demo's cumulative state alone, since later steps (the likelihood
+  // panel) read what earlier ones built up rather than re-creating it.
   const goToStep = (index) => {
     if (index < 0 || index >= TOUR_STEPS.length) {
       if (TOUR_STEPS[stepIndex]?.tab === 'rank-preferences') undoRankDemo();
@@ -87,10 +91,7 @@ const Tour = ({ activeTab, onChangeTab }) => {
     setRect(null);
   };
 
-  // Re-measures the target element whenever the active step (or the tab it
-  // lives on) changes, and keeps tracking it across resizes/scrolls while
-  // that step stays on screen -- this is the tour syncing with the DOM, the
-  // canonical reason an effect (rather than render-time work) is needed here.
+  // Re-measures the target element on step/tab change and keeps tracking it across resize/scroll.
   useEffect(() => {
     if (!step) return undefined;
 

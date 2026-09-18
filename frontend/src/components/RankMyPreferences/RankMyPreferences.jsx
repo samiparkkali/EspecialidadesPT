@@ -339,11 +339,8 @@ const RankMyPreferences = ({ vagas, colocados }) => {
     return computeLikelihood(preferences, cutoffsByKey, institutionsByCombo, myNumber, clampedOffset, maxOrdering);
   }, [myNumber, preferences, clampedOffset, institutionsByCombo, cutoffsByKey, maxOrdering]);
 
-  // Precomputes the institution breakdown for every region-only combo this
-  // render actually needs (from "Your ranking" and "Likelihood"), once, in a
-  // single pure pass -- both panels then just look up the same result by key
-  // instead of each rolling independent Math.random() trials, which used to
-  // show two different percentages for the same thing at once.
+  // Precomputed once so both panels look up the same result instead of each rolling independent
+  // Math.random() trials, which used to show two different percentages for the same thing at once.
   const breakdownsByCombo = useMemo(() => {
     const neededCombos = new Set();
     for (const p of preferences) {

@@ -44,9 +44,7 @@ const SpecialtyStats = ({ vagas }) => {
     return map;
   }, [rows, years, regionKeys]);
 
-  // Latest year with any institution-level detail -- some years/specialties
-  // (e.g. MGF) only have region-level rows, so this can be an earlier year
-  // than `years`'s last entry.
+  // Latest year with institution-level detail -- can be earlier than the last year overall (e.g. MGF is region-only some years).
   const latestInstitutionYear = useMemo(() => {
     for (let i = years.length - 1; i >= 0; i -= 1) {
       const hasInstitution = rows.some((r) => Number(r.year) === years[i] && r.institution);
@@ -55,16 +53,12 @@ const SpecialtyStats = ({ vagas }) => {
     return null;
   }, [rows, years]);
 
-  // Every year that has institution-level detail for this specialty, so the
-  // table can show each institution's seat trend, not just the latest year.
   const institutionYears = useMemo(
     () => years.filter((year) => rows.some((r) => Number(r.year) === year && r.institution)),
     [rows, years]
   );
 
-  // Grouped by region so the table reads as a browsable hierarchy (region ->
-  // institution) instead of one long alphabetical list -- each institution
-  // keeps whichever region it was most recently seen under.
+  // Grouped by region; each institution keeps whichever region it was most recently seen under.
   const byInstitutionByRegion = useMemo(() => {
     if (latestInstitutionYear === null) return [];
     const byName = new Map();
@@ -109,9 +103,7 @@ const SpecialtyStats = ({ vagas }) => {
   const maxTotal = Math.max(...totalsByYear.map((p) => p.seats), 1);
   const width = 480;
   const height = 160;
-  // Leave headroom above the tallest bar for its value label -- without it,
-  // the max-value bar's label sits right at (or above) the chart's own top
-  // edge and overlaps whatever is rendered above the chart.
+  // Headroom above the tallest bar so its value label doesn't overlap the chart's top edge.
   const topPad = 16;
   const barSlot = width / Math.max(1, totalsByYear.length);
 
@@ -181,10 +173,7 @@ const SpecialtyStats = ({ vagas }) => {
                   {regionKeys.map((regionKey) => {
                     const seats = perRegion.get(regionKey) || 0;
                     if (!seats) return null;
-                    // Enforce a visible minimum so a 1-seat segment doesn't
-                    // collapse to a sliver -- stacks a little taller than
-                    // `height` when several segments are that small, which
-                    // is an acceptable trade for staying visible/labelable.
+                    // Visible minimum so a 1-seat segment doesn't collapse to a sliver.
                     const segHeight = Math.max(8, (seats / maxTotal) * (height - topPad));
                     yCursor -= segHeight;
                     const segY = yCursor;

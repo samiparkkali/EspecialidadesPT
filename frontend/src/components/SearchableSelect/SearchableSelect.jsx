@@ -13,14 +13,8 @@ const SearchableSelect = ({ label, options, value, onChange, placeholder, getLab
   const blurTimeout = useRef(null);
   const optionRefs = useRef([]);
 
-  // Clear stale typed text whenever the committed value changes for any
-  // reason other than picking an option here -- e.g. a parent clearing the
-  // selection because it became invalid for a newly-changed sibling filter,
-  // or this component's own clear ("x") button. Without this, the input
-  // keeps showing old typed text that no longer matches the real selection.
-  // Adjusted during render (React's recommended pattern for this, using
-  // state rather than a ref so it plays well with the compiler) instead of
-  // an effect, which would cause an extra render pass every time.
+  // Clear stale typed text when `value` changes externally (e.g. a parent resets an invalid selection).
+  // Done during render, not an effect, to avoid an extra render pass.
   const [prevValue, setPrevValue] = useState(value);
   if (prevValue !== value) {
     setPrevValue(value);

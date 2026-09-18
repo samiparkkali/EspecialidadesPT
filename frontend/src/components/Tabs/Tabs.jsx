@@ -5,9 +5,7 @@ const Tabs = ({ tabs, active, onChange }) => {
   const sentinelRef = useRef(null);
   const [stuck, setStuck] = useState(false);
 
-  // A 0-height sentinel placed right before the sticky bar: once it scrolls
-  // out of view, the bar itself must be pinned to the top, so that's the cue
-  // to add the "floating" shadow/background.
+  // A 0-height sentinel right before the sticky bar: once it scrolls out of view, the bar is pinned, so add the floating style.
   useEffect(() => {
     const sentinel = sentinelRef.current;
     if (!sentinel) return undefined;

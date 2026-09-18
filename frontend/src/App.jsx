@@ -10,8 +10,7 @@ import SpecialtyStats from './components/SpecialtyStats/SpecialtyStats';
 import Spinner from './components/Spinner/Spinner';
 import Tour from './components/Tour/Tour';
 
-// Single source of truth for the site name -- shown in the <h1> and mirrored
-// to the browser tab (index.html's static <title> can't be templated).
+// Single source of truth for the site name -- mirrored to the tab title since index.html's <title> is static.
 const SITE_TITLE = 'Internato Impossible';
 
 const TABS = [
@@ -33,9 +32,7 @@ function App() {
     document.title = SITE_TITLE;
   }, []);
 
-  // Swipe left/right between tabs on touch devices -- ignored if the touch
-  // started on something horizontally scrollable itself (a chart or table),
-  // so swiping to scroll those doesn't also flip the tab.
+  // Swipe left/right between tabs, ignored if the touch started on something horizontally scrollable (chart/table).
   const touchStart = useRef(null);
   const handleTouchStart = (e) => {
     const target = e.target.closest('[data-h-scroll]');
@@ -79,12 +76,10 @@ function App() {
   const evolutionPoints = useMemo(() => {
     if (!vagas) return [];
 
-    // Each row is already leaf-level (build_dataset.py's _leaf_rows_only),
-    // so summing directly here can't double-count across granularity levels.
+    // Rows are already leaf-level (build_dataset.py's _leaf_rows_only), so summing here can't double-count.
     const filtered = vagas.filter((r) => {
       if (specialty && r.specialty !== specialty) return false;
       if (institution) {
-        // Years without institution data can't be filtered by institution.
         if (!r.institution) return false;
         if ((r.canonical_institution || r.institution) !== institution) return false;
       }

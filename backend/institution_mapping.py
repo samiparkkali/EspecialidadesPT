@@ -106,6 +106,10 @@ CANONICAL_MAP: dict[str, list[str]] = {
         "Centro Hospitalar e Universitário de Coimbra",
         "ULS Coimbra",
         "ULS de Coimbra",
+        # Its rehab-medicine site, printed under a completely unrelated full
+        # name in colocados ("Centro Medicina de Reabilitação da Região
+        # Centro Rovisco Pais") that shares no substring with "Coimbra".
+        "Rovisco Pais",
     ],
     "ULS Braga": [
         "Hospital de Braga",
@@ -358,7 +362,7 @@ _CLINIC_SUFFIX_GLITCHED = re.compile(r"\b[0-9]SF\s+.+$", re.IGNORECASE)
 # ", E.P.E." varies in spacing/punctuation across years, plus the OCR glitch
 # "EFE." (P misread as F).
 _EPE_SUFFIX = re.compile(r",?\s*E\.?\s*P\.?\s*E\.?\s*[.,]?\s*$", re.IGNORECASE)
-_EFE_SUFFIX = re.compile(r",?\s*EFE\.?\s*$", re.IGNORECASE)
+_EFE_SUFFIX = re.compile(r",?\s*E\.?\s*F\.?\s*E\.?\s*[.,]?\s*$", re.IGNORECASE)
 # Compound place-name dash varies: hyphen, en/em dash, or a stray "." used as
 # a word separator ("TONDELA . VISEU"). Period form requires 2+ word chars on
 # each side so it never matches single-letter abbreviations like "E.P.E.".
