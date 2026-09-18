@@ -39,14 +39,8 @@ body {
 
 .tour-row {
   display: flex;
-  justify-content: flex-start;
+  justify-content: center;
   margin-bottom: 1.25rem;
-}
-
-@media (max-width: 560px) {
-  .tour-row {
-    justify-content: center;
-  }
 }
 
 h1 {

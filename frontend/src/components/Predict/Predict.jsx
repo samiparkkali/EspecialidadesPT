@@ -28,6 +28,14 @@ const buildCutoffsByYear = (colocados) => {
 
 const DEFAULT_OFFSET = 200;
 
+// Rendering every match (can be 1000+ rows with a low number and no
+// specialty/region filter) is what caused the visible input lag on the
+// first keystroke -- that's the render that flips `results` from null to a
+// huge array and mounts every card/row at once. Capping it keeps the first
+// paint cheap; results are already sorted most-competitive-first, so the
+// cap only hides the least useful (highest-cutoff) matches.
+const RESULTS_DISPLAY_LIMIT = 150;
+
 // Region lookup from ALL years of vagas, so a no-longer-offered institution still resolves to its region.
 const buildRegionByInstitution = (vagas) => {
   const map = new Map();
@@ -148,8 +156,14 @@ const Predict = ({ vagas, colocados }) => {
 
       {results && (
         <>
+          {results.length > RESULTS_DISPLAY_LIMIT && (
+            <p className="subtitle">
+              Showing the {RESULTS_DISPLAY_LIMIT} most competitive of {results.length} matches. Narrow with the
+              specialty/region filters above to see the rest.
+            </p>
+          )}
           <div className={styles.mobileResults}>
-            {results.map((r) => (
+            {results.slice(0, RESULTS_DISPLAY_LIMIT).map((r) => (
               <div key={`${r.specialty}|${r.institution}`} className={styles.resultCard}>
                 <div className={styles.resultTitle}>
                   {r.specialty} - {r.institution}
@@ -180,7 +194,7 @@ const Predict = ({ vagas, colocados }) => {
                 </tr>
               </thead>
               <tbody>
-                {results.map((r) => (
+                {results.slice(0, RESULTS_DISPLAY_LIMIT).map((r) => (
                   <tr key={`${r.specialty}|${r.institution}`}>
                     <td>{r.specialty}</td>
                     <td>{r.institution}</td>
