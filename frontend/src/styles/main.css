@@ -156,8 +156,8 @@ label {
 }
 
 .filters-row > label {
-  flex: 1 1 280px;
-  max-width: 420px;
+  flex: 1 1 160px;
+  max-width: 220px;
 }
 
 table {
