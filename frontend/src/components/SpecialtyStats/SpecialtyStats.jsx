@@ -117,7 +117,7 @@ const SpecialtyStats = ({ vagas }) => {
 
   return (
     <>
-      <div className="card">
+      <div className="card" data-tour="specialty-stats">
         <h2>Specialty Statistics</h2>
         <p className="subtitle">
           Pick a specialty to see how its total seat count has moved from {years[0] || '...'} to{' '}
@@ -259,7 +259,7 @@ const SpecialtyStats = ({ vagas }) => {
                       <tr key={inst.institution}>
                         <td>{inst.institution}</td>
                         {institutionYears.map((year) => (
-                          <td key={year}>{inst.byYear.get(year) ?? '—'}</td>
+                          <td key={year}>{inst.byYear.get(year) ?? '-'}</td>
                         ))}
                       </tr>
                     ))}

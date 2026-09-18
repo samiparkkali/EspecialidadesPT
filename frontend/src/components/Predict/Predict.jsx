@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import SearchableSelect from '../SearchableSelect/SearchableSelect';
+import { regionLabel } from '../../utils/regionLabels';
 
 // Per specialty/institution, tracks each year's cutoff (last ordering number
 // placed); shown per-year rather than just averaged, since the cutoff varies a lot year to year.
@@ -27,15 +28,33 @@ const buildCutoffsByYear = (colocados) => {
 
 const DEFAULT_OFFSET = 200;
 
-const Predict = ({ colocados }) => {
+// Region lookup from ALL years of vagas, so a no-longer-offered institution still resolves to its region.
+const buildRegionByInstitution = (vagas) => {
+  const map = new Map();
+  for (const r of vagas) {
+    if (!r.institution) continue;
+    const name = r.canonical_institution || r.institution;
+    if (!map.has(name)) map.set(name, r.region_key || '');
+  }
+  return map;
+};
+
+const Predict = ({ vagas, colocados }) => {
   const [orderingNumber, setOrderingNumber] = useState('');
   const [offset, setOffset] = useState(String(DEFAULT_OFFSET));
   const [specialtyFilter, setSpecialtyFilter] = useState('');
+  const [regionFilter, setRegionFilter] = useState('');
   const groups = useMemo(() => buildCutoffsByYear(colocados), [colocados]);
+  const regionByInstitution = useMemo(() => buildRegionByInstitution(vagas), [vagas]);
 
   const specialties = useMemo(
     () => [...new Set(groups.map((g) => g.specialty))].sort(),
     [groups]
+  );
+
+  const regions = useMemo(
+    () => [...new Set(vagas.map((r) => r.region_key || '').filter(Boolean))].sort(),
+    [vagas]
   );
 
   const results = useMemo(() => {
@@ -45,6 +64,7 @@ const Predict = ({ colocados }) => {
 
     return groups
       .filter((g) => !specialtyFilter || g.specialty === specialtyFilter)
+      .filter((g) => !regionFilter || regionByInstitution.get(g.institution) === regionFilter)
       .map((g) => {
         const years = Array.from(g.cutoffByYear.entries());
         const eligibleYears = years
@@ -70,10 +90,10 @@ const Predict = ({ colocados }) => {
       })
       .filter((r) => r.eligibleYears.length > 0 || r.closeYears.length > 0)
       .sort((a, b) => a.avgCutoff - b.avgCutoff);
-  }, [groups, orderingNumber, offset, specialtyFilter]);
+  }, [groups, orderingNumber, offset, specialtyFilter, regionFilter, regionByInstitution]);
 
   return (
-    <div className="card">
+    <div className="card" data-tour="predict">
       <h2>What could I get into with this Golden Ticket Number?</h2>
       <p className="subtitle">
         Enter your Golden Ticket Number ("ordem de colocação") to see which specialty/institution combinations it
@@ -110,6 +130,14 @@ const Predict = ({ colocados }) => {
           options={specialties}
           value={specialtyFilter}
           onChange={setSpecialtyFilter}
+        />
+
+        <SearchableSelect
+          label="Region"
+          options={regions}
+          value={regionFilter}
+          onChange={setRegionFilter}
+          getLabel={regionLabel}
         />
       </div>
       {orderingNumber && (

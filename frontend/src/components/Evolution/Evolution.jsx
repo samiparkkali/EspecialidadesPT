@@ -42,7 +42,7 @@ const Evolution = ({ points }) => {
   const trendPath = centers.map((c, i) => `${i === 0 ? 'M' : 'L'}${c.x},${c.y}`).join(' ');
 
   return (
-    <div className="card">
+    <div className="card" data-tour="evolution-chart">
       <h2 className={styles.title}>Seats by year</h2>
       <div className={styles.chartScroll} data-h-scroll>
       <svg viewBox={`0 0 ${width} ${height + 24}`} className={styles.chart}>

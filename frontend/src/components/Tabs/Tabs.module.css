@@ -1,33 +1,79 @@
+/* Sticky positioning needs a full-width block to pin against the viewport
+   edge, so that outer layer stays borderless -- the visible border sits on
+   .tabsInner instead, hugging just the tab buttons rather than the full row. */
 .tabs {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  padding-block: 0.5rem;
   display: flex;
-  gap: 0.5rem;
-  margin-bottom: 1.25rem;
-  border-bottom: 1px solid var(--color-border);
+  justify-content: center;
+  flex: 1;
+  min-width: 0;
+  transition: background var(--transition);
+}
+
+.tabsInner {
+  display: flex;
+  gap: 0.6rem;
+  padding: 0.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
   overflow-x: auto;
+  max-width: 100%;
+  transition: box-shadow var(--transition), background var(--transition);
+}
+
+/* Once the sticky bar has actually scrolled up against the viewport edge,
+   give it a shadow + slightly stronger backdrop so it visibly "floats"
+   above the content instead of blending into the page. */
+.tabs.stuck .tabsInner {
+  box-shadow: var(--shadow-md);
+  background: var(--color-surface-raised);
 }
 
 .tab,
 .tabActive {
   background: none;
-  border: none;
-  border-radius: 0;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
   color: var(--color-text-muted);
-  font-size: var(--font-size-base);
-  padding: 0.6rem 0.95rem;
+  font-size: var(--font-size-lg);
+  font-weight: 500;
+  padding: 0.65rem 1.15rem;
   cursor: pointer;
-  border-bottom: 2px solid transparent;
-  transition: color var(--transition), border-color var(--transition);
+  transition: color var(--transition), border-color var(--transition), background var(--transition);
   white-space: nowrap;
 }
 
 .tab:hover:not(:disabled) {
   color: var(--color-text);
-  background: none;
+  background: var(--color-surface-raised);
   border-color: var(--color-border-soft);
 }
 
 .tabActive {
   color: var(--color-secondary);
-  border-bottom-color: var(--color-secondary);
-  font-weight: 600;
+  background: var(--color-secondary-soft);
+  border-color: var(--color-secondary);
+  font-weight: 700;
+}
+
+/* Discrete divider between adjacent tabs. */
+.tab,
+.tabActive {
+  position: relative;
+}
+
+.tab + .tab::before,
+.tab + .tabActive::before,
+.tabActive + .tab::before {
+  content: '';
+  position: absolute;
+  left: -0.35rem;
+  top: 0.4rem;
+  bottom: 0.4rem;
+  width: 1px;
+  background: var(--color-border);
 }

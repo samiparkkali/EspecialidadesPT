@@ -8,6 +8,7 @@ import ThisYear from './components/ThisYear/ThisYear';
 import RankMyPreferences from './components/RankMyPreferences/RankMyPreferences';
 import SpecialtyStats from './components/SpecialtyStats/SpecialtyStats';
 import Spinner from './components/Spinner/Spinner';
+import Tour from './components/Tour/Tour';
 
 // Single source of truth for the site name -- shown in the <h1> and mirrored
 // to the browser tab (index.html's static <title> can't be templated).
@@ -118,7 +119,10 @@ function App() {
         institution and year, extracted from the official ACSS notices.
       </p>
 
-      <Tabs tabs={TABS} active={activeTab} onChange={setActiveTab} />
+      <div className="tabs-row">
+        <Tabs tabs={TABS} active={activeTab} onChange={setActiveTab} />
+        <Tour activeTab={activeTab} onChangeTab={setActiveTab} />
+      </div>
 
       <div onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
       {activeTab === 'overview' && (
@@ -145,7 +149,7 @@ function App() {
 
           <Evolution points={evolutionPoints} />
 
-          <Predict colocados={colocados} />
+          <Predict vagas={vagas} colocados={colocados} />
         </>
       )}
 

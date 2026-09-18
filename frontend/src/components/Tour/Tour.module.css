@@ -1,0 +1,144 @@
+/* Sticky so it stays lined up with the tab bar (also sticky) as the page
+   scrolls, rather than scrolling away while the tabs float in place. */
+.restartButton {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  flex-shrink: 0;
+  background: none;
+  border: 1px solid var(--color-secondary);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  padding: 0.35rem 0.7rem;
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+  transition: color var(--transition), background var(--transition);
+}
+
+.restartButton:hover {
+  color: var(--color-secondary);
+  background: var(--color-secondary-soft);
+}
+
+.promptOverlay {
+  position: fixed;
+  inset: 0;
+  background: #000a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 1rem;
+}
+
+.promptCard {
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-md);
+  padding: 1.5rem;
+  max-width: 380px;
+  width: 100%;
+}
+
+.promptTitle {
+  margin: 0 0 0.6rem;
+  font-size: var(--font-size-lg);
+  color: var(--color-text);
+}
+
+.promptActions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  flex-wrap: wrap;
+}
+
+.promptActions button:first-child {
+  border-color: var(--color-secondary);
+  color: var(--color-secondary);
+}
+
+.dimOverlay {
+  position: fixed;
+  inset: 0;
+  background: #0009;
+  z-index: 90;
+  pointer-events: none;
+}
+
+.spotlight {
+  position: fixed;
+  border-radius: var(--radius-sm);
+  box-shadow: 0 0 0 4px var(--color-secondary), 0 0 0 9999px #0009;
+  z-index: 91;
+  pointer-events: none;
+  transition: top var(--transition), left var(--transition), width var(--transition), height var(--transition);
+}
+
+.tooltip {
+  position: fixed;
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-secondary);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-md);
+  padding: 1rem 1.1rem;
+  z-index: 92;
+  transition: top var(--transition), left var(--transition);
+}
+
+.tooltipCounter {
+  margin: 0 0 0.3rem;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.tooltipTitle {
+  margin: 0 0 0.4rem;
+  font-size: var(--font-size-base);
+  color: var(--color-secondary);
+}
+
+.tooltipText {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  line-height: 1.5;
+}
+
+.tooltipControls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 0.9rem;
+}
+
+.navButtons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.skipButton {
+  background: none;
+  border-color: transparent;
+  color: var(--color-text-muted);
+  padding: 0.4rem 0.5rem;
+}
+
+@media (max-width: 480px) {
+  .tooltip {
+    padding: 0.85rem 0.9rem;
+  }
+
+  .tooltipControls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .navButtons {
+    justify-content: flex-end;
+  }
+}

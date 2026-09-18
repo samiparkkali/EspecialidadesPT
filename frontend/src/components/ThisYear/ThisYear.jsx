@@ -81,7 +81,7 @@ const ThisYear = ({ vagas }) => {
 
   return (
     <>
-      <div className="card">
+      <div className="card" data-tour="portugal-map">
         <h2>Seats available for {latestYear}</h2>
         <p className="subtitle">
           Click a region on the map to filter. This is the

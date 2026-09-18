@@ -1,19 +1,10 @@
 import { useMemo, useRef, useState } from 'react';
 import SearchableSelect from '../SearchableSelect/SearchableSelect';
 import { colorForRegion } from '../../utils/regionColors';
+import { regionLabel } from '../../utils/regionLabels';
 import styles from './RankMyPreferences.module.css';
 
 const LIKELIHOOD_TRIALS = 1000;
-
-const REGION_LABELS = {
-  norte: 'NORTE',
-  centro: 'CENTRO',
-  'lisboa-vale-tejo': 'LVT',
-  alentejo: 'ALENTEJO',
-  algarve: 'ALGARVE',
-  acores: 'AÇORES',
-  madeira: 'MADEIRA',
-};
 
 // Green (likely to enter) -> yellow -> red (unlikely), for likelihood pct display.
 const colorForPct = (pct) => {
@@ -21,9 +12,6 @@ const colorForPct = (pct) => {
   const hue = (p / 100) * 120; // 0 = red, 120 = green
   return `hsl(${hue}, 70%, 42%)`;
 };
-
-const regionLabel = (regionKey) =>
-  REGION_LABELS[regionKey] || (regionKey ? regionKey.replace(/-/g, ' ').toUpperCase() : 'UNMAPPED REGION');
 
 // Institution '' means "the whole region aggregate", not a specific hospital.
 const comboKey = (specialty, regionKey, institution = '') => `${specialty}|||${regionKey}|||${institution}`;
@@ -391,7 +379,7 @@ const RankMyPreferences = ({ vagas, colocados }) => {
 
   return (
     <>
-      <div className="card">
+      <div className="card" data-tour="rank-preferences">
         <h2>Rank My Preferences</h2>
         <p className="subtitle">
           A sketchboard for thinking through your "ordem de colocação" (Golden Ticket Number) choices. Browse
@@ -401,7 +389,7 @@ const RankMyPreferences = ({ vagas, colocados }) => {
           can judge how realistic a spot is for your own number.
         </p>
 
-        <div className={styles.filterRow}>
+        <div className={styles.filterRow} data-tour="rank-filters">
           <SearchableSelect
             label="Specialty"
             options={allSpecialties}
@@ -433,7 +421,7 @@ const RankMyPreferences = ({ vagas, colocados }) => {
             <h3 className={styles.subheading}>
               Browse options ({filteredCombos.length})
             </h3>
-            <div className={styles.comboList}>
+            <div className={styles.comboList} data-tour="rank-browse">
               {filteredCombos.map((combo) => {
                 const base = baseComboKey(combo.specialty, combo.regionKey);
                 // Show the expand arrow even for a single institution -- hiding its name behind the region label alone was confusing.
@@ -505,7 +493,7 @@ const RankMyPreferences = ({ vagas, colocados }) => {
               )}
             </div>
 
-            <div className={styles.numberRow}>
+            <div className={styles.numberRow} data-tour="rank-number">
               <label>
                 Your Golden Ticket Number
                 <input
@@ -544,7 +532,7 @@ const RankMyPreferences = ({ vagas, colocados }) => {
               Drag to reorder, or use the arrows. This is your working sketch: add, remove and reshuffle freely.
             </p>
 
-            <ol className={styles.rankList}>
+            <ol className={styles.rankList} data-tour="rank-list">
               {preferences.map((p, i) => {
                 const cutoff = cutoffSummary(p.specialty, p.regionKey, p.institution);
                 const key = comboKey(p.specialty, p.regionKey, p.institution || '');
@@ -630,10 +618,21 @@ const RankMyPreferences = ({ vagas, colocados }) => {
         )}
 
         {likelihood && !likelihood.noDataAtAll && (
-          <div className={styles.likelihoodPanel}>
+          <div className={styles.likelihoodPanel} data-tour="rank-likelihood">
             <h4 className={styles.subheading} style={{ marginBottom: '0.35rem' }}>
               Likelihood of entering each option ({LIKELIHOOD_TRIALS} trials, your number {myNumber} &plusmn;{' '}
               {clampedOffset}, cutoffs sampled from each option&apos;s own year-to-year history)
+              <span className={styles.infoIcon} tabIndex={0} role="note" aria-label="How these percentages are calculated">
+                i
+                <span className={styles.infoTooltip}>
+                  This runs a Monte Carlo simulation: on each of {LIKELIHOOD_TRIALS} trials, it draws a random
+                  ordering number within &plusmn;{clampedOffset} of yours, then for every ranked option randomly
+                  samples one past year's actual cutoff for that specialty/institution. If your drawn number would
+                  have beaten that year's cutoff, the trial counts as a hit for that option. Each option's
+                  percentage is its own hit rate across all trials, independent of the others, so it reflects "if I
+                  only had this one choice" odds rather than a rank-ordered waterfall.
+                </span>
+              </span>
             </h4>
             <ul className={styles.likelihoodList}>
               {likelihood.perOption.map((opt, i) => {
