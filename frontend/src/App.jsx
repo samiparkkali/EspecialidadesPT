@@ -17,7 +17,15 @@ function App() {
   const { data: vagas, error: vagasError } = useDataset('vagas.json');
   const { data: colocados, error: colocadosError } = useDataset('colocados.json');
 
-  const [activeTab, setActiveTab] = useState('overview');
+  const [activeTab, setActiveTabRaw] = useState('overview');
+
+  // Every user-initiated tab switch (click or swipe) jumps back to the top
+  // of the page, so the new tab's content starts in view instead of
+  // resuming at whatever scroll depth the previous tab was left at.
+  const setActiveTab = (id) => {
+    setActiveTabRaw(id);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
   const [specialty, setSpecialty] = useState('');
   const [institution, setInstitution] = useState('');
 

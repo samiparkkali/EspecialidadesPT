@@ -310,6 +310,16 @@ const RankMyPreferences = ({ vagas, colocados }) => {
     });
   };
 
+  // Surfaces each pick's rank number right on its browse-list button, since
+  // the scratchpad (the only other place that shows ranking order) is
+  // hidden on mobile -- without this there'd be no way to see order at all.
+  const preferenceRank = (specialty, regionKey, institution = null) => {
+    const idx = preferences.findIndex(
+      (p) => p.specialty === specialty && p.regionKey === regionKey && p.institution === institution
+    );
+    return idx === -1 ? null : idx + 1;
+  };
+
   const movePreference = (index, delta) => {
     const target = index + delta;
     if (target < 0 || target >= preferences.length) return;
@@ -391,9 +401,10 @@ const RankMyPreferences = ({ vagas, colocados }) => {
         <h2>Rank My Preferences</h2>
         <p className="subtitle">
           A sketchboard for thinking through your "ordem de colocação" (Golden Ticket Number) choices. Filter and
-          browse specialty/region/institution options below, click to add them to your ranking, and click an added
-          option again to remove it (or use the ranking list&apos;s reorder/remove controls): there&apos;s no
-          required minimum. Seats and recent Golden Ticket Number cutoffs from {latestYear} and prior years are
+          browse specialty/region/institution options below, click to add them to your ranking (its position shows
+          right on the button as #1, #2, and so on), and click it again to remove it. There&apos;s no required
+          minimum, and on a wider screen you can also drag or arrow-key entries into a different order in the
+          ranking list below. Seats and recent Golden Ticket Number cutoffs from {latestYear} and prior years are
           shown next to each option so you can judge how realistic a spot is for your own number.
         </p>
 
@@ -456,8 +467,12 @@ const RankMyPreferences = ({ vagas, colocados }) => {
                         disabled={anyEntryUsed && !regionEntryExists(combo.specialty, combo.regionKey)}
                       >
                         <span className={styles.comboItemTitle}>
+                          {(() => {
+                            const rank = preferenceRank(combo.specialty, combo.regionKey, null);
+                            return rank ? <span className={styles.rankBadge}>#{rank}</span> : null;
+                          })()}
                           {combo.specialty} - {regionLabel(combo.regionKey)}
-                          {regionEntryExists(combo.specialty, combo.regionKey) && ' — added, tap to remove'}
+                          {regionEntryExists(combo.specialty, combo.regionKey) && ' — tap to remove'}
                         </span>
                         <span className={styles.comboItemMeta}>
                           {combo.seats} seats
@@ -497,8 +512,9 @@ const RankMyPreferences = ({ vagas, colocados }) => {
                               }
                             >
                               <span className={styles.comboItemTitle}>
+                                {used && <span className={styles.rankBadge}>#{preferenceRank(combo.specialty, combo.regionKey, inst.institution)}</span>}
                                 {inst.institution}
-                                {used && ' — added, tap to remove'}
+                                {used && ' — tap to remove'}
                               </span>
                               <span className={styles.comboItemMeta}>
                                 {inst.seats} seats

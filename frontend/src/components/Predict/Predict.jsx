@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import SearchableSelect from '../SearchableSelect/SearchableSelect';
 import { regionLabel } from '../../utils/regionLabels';
+import styles from './Predict.module.css';
 
 // Cutoffs are shown per-year rather than averaged, since they vary a lot year to year.
 const UNKNOWN_INSTITUTION = 'Institution not recorded (OCR year)';
@@ -146,40 +147,62 @@ const Predict = ({ vagas, colocados }) => {
       )}
 
       {results && (
-        <div data-h-scroll style={{ overflowX: 'auto', marginTop: '1rem' }}>
-        <table style={{ minWidth: '620px' }}>
-          <thead>
-            <tr>
-              <th>Specialty</th>
-              <th>Institution</th>
-              <th>Years you'd get in</th>
-              <th>Close calls (+offset)</th>
-              <th>Average cutoff</th>
-            </tr>
-          </thead>
-          <tbody>
+        <>
+          <div className={styles.mobileResults}>
             {results.map((r) => (
-              <tr key={`${r.specialty}|${r.institution}`}>
-                <td>{r.specialty}</td>
-                <td>{r.institution}</td>
-                <td>
-                  {r.eligibleYears.map((y) => `${y.year} (${y.cutoff})`).join(', ') || '-'}
-                  {r.eligibleYears.length > 0 && r.eligibleYears.length < r.totalYears && (
-                    <span className="subtitle"> (of {r.totalYears} years with data)</span>
-                  )}
-                </td>
-                <td>{r.closeYears.map((y) => `${y.year} (${y.cutoff})`).join(', ') || '-'}</td>
-                <td>{r.avgCutoff}</td>
-              </tr>
+              <div key={`${r.specialty}|${r.institution}`} className={styles.resultCard}>
+                <div className={styles.resultTitle}>
+                  {r.specialty} - {r.institution}
+                </div>
+                <div className={styles.resultMeta}>
+                  Avg cutoff <span className={styles.resultAvg}>{r.avgCutoff}</span>
+                  {r.eligibleYears.length > 0 &&
+                    ` · in: ${r.eligibleYears.map((y) => `${y.year} (${y.cutoff})`).join(', ')}`}
+                  {r.closeYears.length > 0 &&
+                    ` · close: ${r.closeYears.map((y) => `${y.year} (${y.cutoff})`).join(', ')}`}
+                </div>
+              </div>
             ))}
             {results.length === 0 && (
-              <tr>
-                <td colSpan={5}>No matches for this number with the current data. Maybe try plumbing.</td>
-              </tr>
+              <p className="subtitle">No matches for this number with the current data. Maybe try plumbing.</p>
             )}
-          </tbody>
-        </table>
-        </div>
+          </div>
+
+          <div data-h-scroll className={styles.desktopTable} style={{ overflowX: 'auto', marginTop: '1rem' }}>
+            <table style={{ minWidth: '620px' }}>
+              <thead>
+                <tr>
+                  <th>Specialty</th>
+                  <th>Institution</th>
+                  <th>Years you'd get in</th>
+                  <th>Close calls (+offset)</th>
+                  <th>Average cutoff</th>
+                </tr>
+              </thead>
+              <tbody>
+                {results.map((r) => (
+                  <tr key={`${r.specialty}|${r.institution}`}>
+                    <td>{r.specialty}</td>
+                    <td>{r.institution}</td>
+                    <td>
+                      {r.eligibleYears.map((y) => `${y.year} (${y.cutoff})`).join(', ') || '-'}
+                      {r.eligibleYears.length > 0 && r.eligibleYears.length < r.totalYears && (
+                        <span className="subtitle"> (of {r.totalYears} years with data)</span>
+                      )}
+                    </td>
+                    <td>{r.closeYears.map((y) => `${y.year} (${y.cutoff})`).join(', ') || '-'}</td>
+                    <td>{r.avgCutoff}</td>
+                  </tr>
+                ))}
+                {results.length === 0 && (
+                  <tr>
+                    <td colSpan={5}>No matches for this number with the current data. Maybe try plumbing.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
     </div>
   );

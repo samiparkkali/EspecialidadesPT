@@ -86,6 +86,24 @@
   font-weight: 500;
 }
 
+/* Shows a pick's rank number right on its browse-list button -- the only
+   place mobile users can see ranking order, since the scratchpad (the
+   drag-to-reorder list) is hidden there. */
+.rankBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.3rem;
+  height: 1.3rem;
+  padding: 0 0.3rem;
+  margin-right: 0.35rem;
+  border-radius: 999px;
+  background: var(--color-secondary);
+  color: var(--color-bg);
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
 .comboItemMeta {
   font-size: 0.72rem;
   color: var(--color-text-muted);
