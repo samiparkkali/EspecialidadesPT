@@ -7,7 +7,9 @@ const regionLabel = (regionKey) => (regionKey ? regionKey.replace(/-/g, ' ').toU
 
 const SpecialtyStats = ({ vagas }) => {
   const specialties = useMemo(() => [...new Set(vagas.map((r) => r.specialty))].sort(), [vagas]);
-  const [specialty, setSpecialty] = useState(specialties[0] || '');
+  const [specialty, setSpecialty] = useState(
+    () => specialties[Math.floor(Math.random() * specialties.length)] || ''
+  );
 
   const rows = useMemo(
     () => vagas.filter((r) => r.specialty === specialty),
