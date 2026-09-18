@@ -299,6 +299,16 @@ CANONICAL_MAP: dict[str, list[str]] = {
         "Hospital Lusíadas Lisboa",
         "Hospital Lusíadas",
     ],
+    # Same Parede hospital printed under 5 spellings across years, 3 of them
+    # differing only by apostrophe character (', ', ´) that substring/fuzzy
+    # matching can't bridge -- never unified before, each silently orphaned.
+    "Hospital Ortopédico de Santa Ana - Parede": [
+        "Hospital Ortopédico de Santa Ana",
+        "Hospital Ortopédico de Sant’Ana",
+        "Hospital Ortopédico de Sant'Ana",
+        "Hospital Ortopédico Sant´Ana",
+        "Hospital de Sant'Ana",
+    ],
     "Hospital de Cascais Dr. José de Almeida": [
         "Hospital de Cascais Dr",
         "HPP Hospital de Cascais",
