@@ -1,13 +1,10 @@
-/* Sticky positioning needs a full-width block to pin against the viewport
-   edge, so that outer layer stays borderless -- the visible border sits on
-   .tabsInner instead, hugging just the tab buttons rather than the full row.
-   The tour button (rendered as a separate sibling in App.jsx, outside this
-   element) is not sticky, so it just scrolls away normally instead of
-   floating. This element must also be a direct child of a tall ancestor
-   (App.jsx's `.tabs-sticky-region`, which spans the whole active tab's
-   content) rather than nested in a wrapper that shrinks to fit it --
-   otherwise its containing block has no extra height to stick within, and
-   it detaches again the instant that wrapper scrolls out of view. */
+/* This element must be a direct child of a tall ancestor (App.jsx's
+   `.tabs-sticky-region`, which spans the whole active tab's content) rather
+   than nested in a wrapper that shrinks to fit it -- otherwise its
+   containing block has no extra height to stick within, and it detaches
+   again the instant that wrapper scrolls out of view. The tour button
+   (rendered as a separate sibling in App.jsx, outside this element) is not
+   sticky, so it just scrolls away normally instead of floating. */
 .tabs {
   position: sticky;
   top: 0;
@@ -18,32 +15,21 @@
   justify-content: center;
   min-width: 0;
   transition: background var(--transition);
-  /* .tabs itself spans the full row width (needed for sticky to work), but
-     only .tabsInner is visible -- without this, the invisible margins on
-     either side of the centered pill still sit in front of (and steal
-     clicks/taps from) whatever page content has scrolled under them. */
-  pointer-events: none;
-  /* Full-bleed: break out of #root's centered max-width column so the bar
-     spans the whole viewport instead of stopping at the 1100px content
-     width, while .tabsInner stays centered within it via justify-content.
-     Margin-only (no left/right) so this doesn't fight the sticky/top
-     positioning above -- the percentage in each margin resolves against
-     the containing block's width, which cancels out #root's own padding
-     exactly, leaving a pure viewport-width shift either side. */
-  width: 100vw;
-  margin-left: calc(50% - 50vw);
-  margin-right: calc(50% - 50vw);
 }
 
 .tabsInner {
   display: flex;
+  justify-content: center;
   gap: 0.6rem;
   padding: 0.5rem;
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
   background: var(--color-surface);
   overflow-x: auto;
-  max-width: 100%;
+  /* The visible bordered bar spans the same full width as .tabs itself
+     (edge to edge, no rounded "pill" floating in the middle) -- the tab
+     buttons are centered within it instead. */
+  width: 100%;
   transition: box-shadow var(--transition), background var(--transition);
   pointer-events: auto;
 }
