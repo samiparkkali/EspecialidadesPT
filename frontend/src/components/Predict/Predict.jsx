@@ -157,7 +157,7 @@ const Predict = ({ vagas, colocados }) => {
       {results && (
         <>
           {results.length > RESULTS_DISPLAY_LIMIT && (
-            <p className="subtitle">
+            <p className="subtitle" style={{ fontSize: '0.72rem' }}>
               Showing the {RESULTS_DISPLAY_LIMIT} most competitive of {results.length} matches. Narrow with the
               specialty/region filters above to see the rest.
             </p>
