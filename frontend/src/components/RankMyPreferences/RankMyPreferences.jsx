@@ -114,8 +114,8 @@ const RankMyPreferences = ({ vagas, colocados }) => {
   const [myOrderingNumber, setMyOrderingNumber] = useState('');
   const [spreadOffset, setSpreadOffset] = useState(200);
   const [comboFilter, setComboFilter] = useState('');
-  const [specialtyFilter, setSpecialtyFilter] = useState('');
-  const [regionFilter, setRegionFilter] = useState('');
+  const [specialtyFilter, setSpecialtyFilter] = useState([]);
+  const [regionFilter, setRegionFilter] = useState([]);
   const dragIndex = useRef(null);
   const [dragOverIndex, setDragOverIndex] = useState(null);
 
@@ -266,8 +266,8 @@ const RankMyPreferences = ({ vagas, colocados }) => {
   const filteredCombos = useMemo(() => {
     const q = comboFilter.trim().toLowerCase();
     return availableCombos.filter((c) => {
-      if (specialtyFilter && c.specialty !== specialtyFilter) return false;
-      if (regionFilter && c.regionKey !== regionFilter) return false;
+      if (specialtyFilter.length && !specialtyFilter.includes(c.specialty)) return false;
+      if (regionFilter.length && !regionFilter.includes(c.regionKey)) return false;
       if (!q) return true;
       return c.specialty.toLowerCase().includes(q) || regionLabel(c.regionKey).toLowerCase().includes(q);
     });
@@ -379,41 +379,43 @@ const RankMyPreferences = ({ vagas, colocados }) => {
       <div className="card" data-tour="rank-preferences">
         <h2>Rank My Preferences</h2>
         <p className="subtitle">
-          A sketchboard for thinking through your "ordem de colocação" (Golden Ticket Number) choices. Browse
-          specialty/region/institution options on the left, click to add them to your ranking on the right, and
-          freely reorder or remove anything as you think it through: there&apos;s no required minimum. Seats and
-          recent Golden Ticket Number cutoffs from {latestYear} and prior years are shown next to each option so you
-          can judge how realistic a spot is for your own number.
+          A sketchboard for thinking through your "ordem de colocação" (Golden Ticket Number) choices. Filter and
+          browse specialty/region/institution options below, click to add them to your ranking, and freely reorder
+          or remove anything as you think it through: there&apos;s no required minimum. Seats and recent Golden
+          Ticket Number cutoffs from {latestYear} and prior years are shown next to each option so you can judge how
+          realistic a spot is for your own number.
         </p>
 
-        <div className={styles.filterRow} data-tour="rank-filters">
-          <SearchableSelect
-            label="Specialty"
-            options={allSpecialties}
-            value={specialtyFilter}
-            onChange={setSpecialtyFilter}
-            placeholder="Filter specialty..."
-          />
-          <SearchableSelect
-            label="Region"
-            options={allRegions}
-            value={regionFilter}
-            onChange={(v) => setRegionFilter(v)}
-            placeholder="Filter region..."
-            getLabel={regionLabel}
-          />
-          <label className={styles.textFilter}>
-            Search
-            <input
-              type="text"
-              placeholder="Specialty or region..."
-              value={comboFilter}
-              onChange={(e) => setComboFilter(e.target.value)}
-            />
-          </label>
-        </div>
-
         <div className={styles.rankLayout}>
+          <div className={styles.filterRow} data-tour="rank-filters">
+            <SearchableSelect
+              label="Specialty"
+              options={allSpecialties}
+              value={specialtyFilter}
+              onChange={setSpecialtyFilter}
+              placeholder="Filter specialty..."
+              multiple
+            />
+            <SearchableSelect
+              label="Region"
+              options={allRegions}
+              value={regionFilter}
+              onChange={setRegionFilter}
+              placeholder="Filter region..."
+              getLabel={regionLabel}
+              multiple
+            />
+            <label className={styles.textFilter}>
+              Search
+              <input
+                type="text"
+                placeholder="Specialty or region..."
+                value={comboFilter}
+                onChange={(e) => setComboFilter(e.target.value)}
+              />
+            </label>
+          </div>
+
           <div className={styles.browseSection}>
             <h3 className={styles.subheading}>
               Browse options ({filteredCombos.length})

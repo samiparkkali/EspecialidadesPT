@@ -5,7 +5,7 @@ import styles from './SearchableSelect.module.css';
 // browser-native popup that looks and behaves inconsistently across
 // browsers (a "floating box" detached from our styling); this stays a
 // plain, always-same-place panel anchored right under the input.
-const SearchableSelect = ({ label, options, value, onChange, placeholder, getLabel = (o) => o }) => {
+const SearchableSelect = ({ label, options, value, onChange, placeholder, getLabel = (o) => o, multiple = false }) => {
   const [query, setQuery] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
@@ -21,16 +21,26 @@ const SearchableSelect = ({ label, options, value, onChange, placeholder, getLab
     if (query !== '') setQuery('');
   }
 
+  const selected = multiple ? value || [] : value;
+  const isSelected = (o) => (multiple ? selected.includes(o) : o === value);
+
   const filtered = query
     ? options.filter((o) => getLabel(o).toLowerCase().includes(query.toLowerCase())).slice(0, 50)
     : options.slice(0, 50);
 
   const pick = (option) => {
+    if (multiple) {
+      onChange(selected.includes(option) ? selected.filter((o) => o !== option) : [...selected, option]);
+      setQuery('');
+      return;
+    }
     onChange(option);
     setQuery('');
     setIsOpen(false);
     setActiveIndex(-1);
   };
+
+  const removeOne = (option) => onChange(selected.filter((o) => o !== option));
 
   const handleBlur = () => {
     blurTimeout.current = setTimeout(() => {
@@ -106,8 +116,8 @@ const SearchableSelect = ({ label, options, value, onChange, placeholder, getLab
                   optionRefs.current[i] = el;
                 }}
                 role="option"
-                aria-selected={o === value}
-                className={[o === value ? styles.optionActive : styles.option, i === activeIndex ? styles.optionHighlighted : '']
+                aria-selected={isSelected(o)}
+                className={[isSelected(o) ? styles.optionActive : styles.option, i === activeIndex ? styles.optionHighlighted : '']
                   .filter(Boolean)
                   .join(' ')}
                 onMouseDown={() => pick(o)}
@@ -119,7 +129,19 @@ const SearchableSelect = ({ label, options, value, onChange, placeholder, getLab
           </ul>
         )}
       </div>
-      {value ? (
+      {multiple ? (
+        <span className={styles.chipRow}>
+          {selected.length === 0 && <span className={styles.chipMuted}>All</span>}
+          {selected.map((o) => (
+            <span key={o} className={styles.chip}>
+              {getLabel(o)}
+              <button type="button" onClick={() => removeOne(o)} aria-label={`Remove ${getLabel(o)} from ${label} filter`}>
+                &times;
+              </button>
+            </span>
+          ))}
+        </span>
+      ) : value ? (
         <span className={styles.chip}>
           {getLabel(value)}
           <button type="button" onClick={() => onChange('')} aria-label={`Clear ${label} filter`}>
