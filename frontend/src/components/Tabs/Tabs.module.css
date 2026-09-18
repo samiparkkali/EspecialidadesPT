@@ -18,6 +18,11 @@
   justify-content: center;
   min-width: 0;
   transition: background var(--transition);
+  /* .tabs itself spans the full row width (needed for sticky to work), but
+     only .tabsInner is visible -- without this, the invisible margins on
+     either side of the centered pill still sit in front of (and steal
+     clicks/taps from) whatever page content has scrolled under them. */
+  pointer-events: none;
 }
 
 .tabsInner {
@@ -30,6 +35,7 @@
   overflow-x: auto;
   max-width: 100%;
   transition: box-shadow var(--transition), background var(--transition);
+  pointer-events: auto;
 }
 
 /* Once the sticky bar has actually scrolled up against the viewport edge,

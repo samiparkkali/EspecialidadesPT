@@ -67,6 +67,20 @@
   overflow-y: auto;
 }
 
+/* With the scratchpad hidden, the browse list is the only way to see or
+   undo a pick -- capping it at a short fixed height turned it into a
+   nested scroll trap (a swipe starting inside it only scrolls the list, not
+   the page). Letting it grow with the page instead gives it room and lets
+   normal page scrolling reach the rest of the tab. Placed after the base
+   .comboList rule (not merged into the media query above) so it actually
+   wins the cascade -- same selector, so source order decides. */
+@media (max-width: 640px) {
+  .comboList {
+    max-height: none;
+    overflow-y: visible;
+  }
+}
+
 .comboItem {
   display: flex;
   flex-direction: column;
