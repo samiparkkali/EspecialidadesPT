@@ -629,7 +629,14 @@ const RankMyPreferences = ({ vagas, colocados }) => {
                       <span className={styles.rankControls}>
                         <button type="button" onClick={() => movePreference(i, -1)} aria-label={t.rankMyPreferences.moveUp} disabled={i === 0}>&uarr;</button>
                         <button type="button" onClick={() => movePreference(i, 1)} aria-label={t.rankMyPreferences.moveDown} disabled={i === preferences.length - 1}>&darr;</button>
-                        <button type="button" onClick={() => removePreference(i)} aria-label={t.rankMyPreferences.remove}>&times;</button>
+                        <button
+                          type="button"
+                          onClick={() => removePreference(i)}
+                          aria-label={t.rankMyPreferences.remove}
+                          data-tour-action="remove-preference"
+                        >
+                          &times;
+                        </button>
                       </span>
                     </div>
                     {canBreakdown && (

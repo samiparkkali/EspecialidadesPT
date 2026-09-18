@@ -53,7 +53,12 @@ export const undoRankDemo = () => {
   window.clearTimeout(state.pendingClickTimer);
   state.pendingClickTimer = null;
   if (state.preferenceAdded) {
-    const removeButtons = document.querySelectorAll('[data-tour="rank-list"] button[aria-label="Remove"]');
+    // Selects by a stable data attribute rather than the button's aria-label,
+    // which is localized (e.g. "Remover" in Portuguese, the default language)
+    // and would silently never match once translated.
+    const removeButtons = document.querySelectorAll(
+      '[data-tour="rank-list"] button[data-tour-action="remove-preference"]'
+    );
     const last = removeButtons[removeButtons.length - 1];
     last?.click();
     state.preferenceAdded = false;
