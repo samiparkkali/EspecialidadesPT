@@ -92,9 +92,14 @@
 /* Small screens: shrink text/padding and swap to short labels so all 4 tabs
    stay on one line instead of wrapping or needing a horizontal scroll. */
 @media (max-width: 560px) {
+  .tabs {
+    padding-block: 0.3rem;
+  }
+
   .tabsInner {
     overflow-x: visible;
     gap: 0.05rem;
+    padding: 0.35rem;
     width: 100%;
   }
 
@@ -103,7 +108,7 @@
     flex: 1;
     text-align: center;
     font-size: 0.85rem;
-    padding: 0.5rem 0.3rem;
+    padding: 0.4rem 0.15rem;
   }
 
   .labelFull {
@@ -125,6 +130,6 @@
   .tab,
   .tabActive {
     font-size: 0.74rem;
-    padding: 0.45rem 0.2rem;
+    padding: 0.35rem 0.1rem;
   }
 }
