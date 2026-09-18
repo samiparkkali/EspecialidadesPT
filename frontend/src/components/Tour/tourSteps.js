@@ -66,10 +66,10 @@ export const TOUR_STEPS = [
   },
   {
     tab: 'rank-preferences',
-    selector: '[data-tour="rank-list"]',
-    title: 'Watch it land in your scratchpad',
+    selector: '[data-tour="rank-browse"]',
+    title: 'Watch it get added',
     demo: demoAddPreference,
-    text: 'Clicking a combo (like the Cirurgia Geral one just filtered) adds it here immediately, as you can see. From here you can drag to reorder, use the arrows, or remove it: nothing is final.',
+    text: 'We just clicked the Cirurgia Geral combo above, and it’s now marked "added" right there in the list — click it again any time to remove it. On a wider screen it also appears in a separate ranking list below, where you can drag or arrow-key it into a different order.',
   },
   {
     tab: 'rank-preferences',

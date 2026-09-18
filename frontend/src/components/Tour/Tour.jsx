@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { TOUR_STEPS } from './tourSteps';
 import { undoRankDemo } from './rankDemo';
 import styles from './Tour.module.css';
@@ -28,23 +28,28 @@ const TOOLTIP_WIDTH = 320;
 const TOOLTIP_HEIGHT_ESTIMATE = 170;
 
 // Pure placement math from measured state only (never reads window.* live
-// during render, so it stays stable across concurrent re-renders).
-const placeTooltip = (rect, viewport) => {
+// during render, so it stays stable across concurrent re-renders). `height`
+// is the tooltip's own real measured height where available -- falling back
+// to an estimate only for the very first render, before it's been measured --
+// since a fixed estimate undershoots the real height on narrow screens
+// (wrapped text, stacked buttons) and can push Next/Back off-screen.
+const placeTooltip = (rect, viewport, height = TOOLTIP_HEIGHT_ESTIMATE) => {
   if (!rect || !viewport) {
     return { top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: `${TOOLTIP_WIDTH}px` };
   }
   const width = Math.min(TOOLTIP_WIDTH, viewport.width - MARGIN * 2);
+  const maxHeight = viewport.height - MARGIN * 2;
 
   let top = rect.bottom + MARGIN;
-  if (top + TOOLTIP_HEIGHT_ESTIMATE > viewport.height) {
-    top = rect.top - MARGIN - TOOLTIP_HEIGHT_ESTIMATE;
+  if (top + height > viewport.height) {
+    top = rect.top - MARGIN - height;
   }
-  top = Math.max(MARGIN, Math.min(top, viewport.height - TOOLTIP_HEIGHT_ESTIMATE - MARGIN));
+  top = Math.max(MARGIN, Math.min(top, viewport.height - height - MARGIN));
 
   let left = rect.left + rect.width / 2 - width / 2;
   left = Math.max(MARGIN, Math.min(left, viewport.width - width - MARGIN));
 
-  return { top: `${top}px`, left: `${left}px`, width: `${width}px` };
+  return { top: `${top}px`, left: `${left}px`, width: `${width}px`, maxHeight: `${maxHeight}px`, overflowY: 'auto' };
 };
 
 const Tour = ({ activeTab, onChangeTab }) => {
@@ -52,6 +57,8 @@ const Tour = ({ activeTab, onChangeTab }) => {
   const [stepIndex, setStepIndex] = useState(0);
   const [rect, setRect] = useState(null);
   const [viewport, setViewport] = useState(null);
+  const [tooltipHeight, setTooltipHeight] = useState(TOOLTIP_HEIGHT_ESTIMATE);
+  const tooltipRef = useRef(null);
 
   const step = phase === 'running' ? TOUR_STEPS[stepIndex] : null;
 
@@ -117,7 +124,19 @@ const Tour = ({ activeTab, onChangeTab }) => {
     };
   }, [step, activeTab]);
 
-  const tooltipStyle = useMemo(() => placeTooltip(rect, viewport), [rect, viewport]);
+  // Placement above uses the tooltip's own real height once measured, since a
+  // fixed estimate undershoots on narrow screens (wrapped text, stacked
+  // buttons) and can otherwise push Next/Back past the bottom of the screen.
+  // Intentionally runs after every render (no deps) to catch height changes
+  // from content/viewport changes, not just rect/viewport swaps; the
+  // threshold check inside prevents this from looping.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useLayoutEffect(() => {
+    const measured = tooltipRef.current?.offsetHeight;
+    if (measured && Math.abs(measured - tooltipHeight) > 1) setTooltipHeight(measured);
+  });
+
+  const tooltipStyle = useMemo(() => placeTooltip(rect, viewport, tooltipHeight), [rect, viewport, tooltipHeight]);
 
   return (
     <>
@@ -154,7 +173,7 @@ const Tour = ({ activeTab, onChangeTab }) => {
               }}
             />
           )}
-          <div className={styles.tooltip} style={tooltipStyle}>
+          <div ref={tooltipRef} className={styles.tooltip} style={tooltipStyle}>
             <p className={styles.tooltipCounter}>{stepIndex + 1} / {TOUR_STEPS.length}</p>
             <h3 className={styles.tooltipTitle}>{step.title}</h3>
             <p className={styles.tooltipText}>{step.text}</p>

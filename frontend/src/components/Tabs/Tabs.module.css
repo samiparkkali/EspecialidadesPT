@@ -1,16 +1,21 @@
 /* Sticky positioning needs a full-width block to pin against the viewport
    edge, so that outer layer stays borderless -- the visible border sits on
    .tabsInner instead, hugging just the tab buttons rather than the full row.
-   The tour button (a plain flex sibling) is not sticky, so it just scrolls
-   away normally instead of floating. */
+   The tour button (rendered as a separate sibling in App.jsx, outside this
+   element) is not sticky, so it just scrolls away normally instead of
+   floating. This element must also be a direct child of a tall ancestor
+   (App.jsx's `.tabs-sticky-region`, which spans the whole active tab's
+   content) rather than nested in a wrapper that shrinks to fit it --
+   otherwise its containing block has no extra height to stick within, and
+   it detaches again the instant that wrapper scrolls out of view. */
 .tabs {
   position: sticky;
   top: 0;
   z-index: 20;
   padding-block: 0.5rem;
+  margin-bottom: 0.6rem;
   display: flex;
   justify-content: center;
-  flex: 1;
   min-width: 0;
   transition: background var(--transition);
 }

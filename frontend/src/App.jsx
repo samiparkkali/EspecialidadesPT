@@ -125,8 +125,9 @@ function App() {
         institution and year, extracted from the official ACSS notices.
       </p>
 
-      <div className="tabs-row">
-        <Tabs tabs={TABS} active={activeTab} onChange={setActiveTab} />
+      <div className="tabs-sticky-region">
+      <Tabs tabs={TABS} active={activeTab} onChange={setActiveTab} />
+      <div className="tour-row">
         <Tour activeTab={activeTab} onChangeTab={setActiveTab} />
       </div>
 
@@ -164,6 +165,7 @@ function App() {
       {activeTab === 'specialty-stats' && <SpecialtyStats vagas={vagas} />}
 
       {activeTab === 'rank-preferences' && <RankMyPreferences vagas={vagas} colocados={colocados} />}
+      </div>
       </div>
 
       <footer className="site-footer">
