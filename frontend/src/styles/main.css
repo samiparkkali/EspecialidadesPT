@@ -84,6 +84,26 @@ h2 {
   border-color: var(--color-border-soft);
 }
 
+/* Any horizontally-scrolling chart/table (marked with data-h-scroll, also
+   used elsewhere to exclude these from the app's own swipe-to-switch-tabs
+   handling) used to just clip its cut-off edge with no hint that there was
+   more content to reach -- it read as broken/truncated rather than
+   scrollable. This is the classic CSS-only "scroll shadow": two opaque
+   background layers that scroll WITH the content (background-attachment:
+   local) mask each edge unless there's actually more to scroll past it,
+   and two fixed shadow layers behind them provide the visible fade. No JS
+   needed to detect scroll position. */
+[data-h-scroll] {
+  background:
+    linear-gradient(to right, var(--color-surface) 30%, rgba(255, 255, 255, 0)) 0 0,
+    linear-gradient(to left, var(--color-surface) 30%, rgba(255, 255, 255, 0)) 100% 0,
+    radial-gradient(farthest-side at 0 50%, rgba(0, 0, 0, 0.35), rgba(0, 0, 0, 0)) 0 0,
+    radial-gradient(farthest-side at 100% 50%, rgba(0, 0, 0, 0.35), rgba(0, 0, 0, 0)) 100% 0;
+  background-repeat: no-repeat;
+  background-size: 40px 100%, 40px 100%, 14px 100%, 14px 100%;
+  background-attachment: local, local, scroll, scroll;
+}
+
 select,
 input,
 button {

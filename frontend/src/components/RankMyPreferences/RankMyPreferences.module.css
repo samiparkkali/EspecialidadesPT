@@ -36,9 +36,11 @@
   margin: 0 0 0.5rem;
 }
 
-/* Single column always: browse, then the number box, then the ranking
+/* Single column by default: browse, then the number box, then the ranking
    scratchpad, then the likelihood panel (outside this grid) at the bottom.
-   Mobile reorders/hides via the media query below instead of duplicating markup. */
+   Mobile reorders/hides via the media query below instead of duplicating
+   markup; a wide-screen media query further down splits into two columns
+   without touching this base rule or the DOM order either. */
 .rankLayout {
   display: grid;
   grid-template-columns: 1fr;
@@ -56,6 +58,47 @@
 
   .scratchpadSection {
     display: none;
+  }
+}
+
+/* Wide desktop had room to spare and nothing using it: filters/browse and
+   number/scratchpad stacked one under the other with independent internal
+   scrollbars instead of living side by side, which is the layout a
+   picker-plus-list UI like this would normally use once there's width for
+   it. Named grid areas re-place each section without reordering the DOM
+   (so mobile's own order/display rules above stay untouched). */
+@media (min-width: 1024px) {
+  .rankLayout {
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+    grid-template-areas:
+      'filters number'
+      'browse scratchpad';
+    align-items: start;
+  }
+
+  .filterRow {
+    grid-area: filters;
+  }
+
+  .browseSection {
+    grid-area: browse;
+  }
+
+  .numberSection {
+    grid-area: number;
+  }
+
+  .scratchpadSection {
+    grid-area: scratchpad;
+  }
+
+  /* The two lists no longer need to self-cap -- each sits in its own
+     column now instead of a single long stacked page, so let both grow
+     with whichever is taller instead of scrolling internally. */
+  .comboList,
+  .rankList {
+    max-height: none;
+    overflow-y: visible;
   }
 }
 

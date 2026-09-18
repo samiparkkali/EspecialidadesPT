@@ -40,13 +40,37 @@ const placeTooltip = (rect, viewport, height = TOOLTIP_HEIGHT_ESTIMATE) => {
   const width = Math.min(TOOLTIP_WIDTH, viewport.width - MARGIN * 2);
   const maxHeight = viewport.height - MARGIN * 2;
 
-  let top = rect.bottom + MARGIN;
-  if (top + height > viewport.height) {
+  const spaceBelow = viewport.height - rect.bottom - MARGIN;
+  const spaceAbove = rect.top - MARGIN;
+  const spaceRight = viewport.width - rect.right - MARGIN;
+  const spaceLeft = rect.left - MARGIN;
+
+  let top;
+  let left = rect.left + rect.width / 2 - width / 2;
+
+  // Below and above are tried first (most natural reading position), but
+  // only when they actually clear the spotlighted rect -- a short-on-room
+  // target used to fall through to whichever side the clamp happened to
+  // land on, which for a rect near the top of the viewport meant the
+  // tooltip landed back on top of it instead of beside it. Falling back to
+  // a side placement instead keeps the tooltip clear of its own target for
+  // short/wide rects (a card, a bar); an extremely tall rect (taller than
+  // the viewport) has no fully clear spot in any direction, so it's the one
+  // case left to the vertical clamp below "below" as the least-bad choice.
+  if (spaceBelow >= height) {
+    top = rect.bottom + MARGIN;
+  } else if (spaceAbove >= height) {
     top = rect.top - MARGIN - height;
+  } else if (spaceRight >= width) {
+    left = rect.right + MARGIN;
+    top = Math.max(MARGIN, Math.min(rect.top, viewport.height - height - MARGIN));
+  } else if (spaceLeft >= width) {
+    left = rect.left - MARGIN - width;
+    top = Math.max(MARGIN, Math.min(rect.top, viewport.height - height - MARGIN));
+  } else {
+    top = spaceBelow >= spaceAbove ? rect.bottom + MARGIN : rect.top - MARGIN - height;
   }
   top = Math.max(MARGIN, Math.min(top, viewport.height - height - MARGIN));
-
-  let left = rect.left + rect.width / 2 - width / 2;
   left = Math.max(MARGIN, Math.min(left, viewport.width - width - MARGIN));
 
   return { top: `${top}px`, left: `${left}px`, width: `${width}px`, maxHeight: `${maxHeight}px`, overflowY: 'auto' };

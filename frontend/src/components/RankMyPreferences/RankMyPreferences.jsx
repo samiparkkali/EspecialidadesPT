@@ -465,14 +465,23 @@ const RankMyPreferences = ({ vagas, colocados }) => {
                           }
                         }}
                         disabled={anyEntryUsed && !regionEntryExists(combo.specialty, combo.regionKey)}
+                        aria-label={
+                          regionEntryExists(combo.specialty, combo.regionKey)
+                            ? `Remove ${combo.specialty} - ${regionLabel(combo.regionKey)} from your ranking`
+                            : undefined
+                        }
                       >
                         <span className={styles.comboItemTitle}>
                           {(() => {
                             const rank = preferenceRank(combo.specialty, combo.regionKey, null);
-                            return rank ? <span className={styles.rankBadge}>#{rank}</span> : null;
+                            return rank ? (
+                              <span className={styles.rankBadge}>
+                                #{rank}
+                                <span aria-hidden="true"> &times;</span>
+                              </span>
+                            ) : null;
                           })()}
                           {combo.specialty} - {regionLabel(combo.regionKey)}
-                          {regionEntryExists(combo.specialty, combo.regionKey) && ' — tap to remove'}
                         </span>
                         <span className={styles.comboItemMeta}>
                           {combo.seats} seats
@@ -510,11 +519,16 @@ const RankMyPreferences = ({ vagas, colocados }) => {
                                   ? removePreferenceFor(combo.specialty, combo.regionKey, inst.institution)
                                   : addPreference(combo.specialty, combo.regionKey, inst.institution)
                               }
+                              aria-label={used ? `Remove ${inst.institution} from your ranking` : undefined}
                             >
                               <span className={styles.comboItemTitle}>
-                                {used && <span className={styles.rankBadge}>#{preferenceRank(combo.specialty, combo.regionKey, inst.institution)}</span>}
+                                {used && (
+                                  <span className={styles.rankBadge}>
+                                    #{preferenceRank(combo.specialty, combo.regionKey, inst.institution)}
+                                    <span aria-hidden="true"> &times;</span>
+                                  </span>
+                                )}
                                 {inst.institution}
-                                {used && ' — tap to remove'}
                               </span>
                               <span className={styles.comboItemMeta}>
                                 {inst.seats} seats
