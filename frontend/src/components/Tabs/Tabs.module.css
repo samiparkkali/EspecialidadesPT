@@ -23,7 +23,9 @@
   gap: 0.6rem;
   padding: 0.5rem;
   border: 1px solid var(--color-border);
-  border-radius: var(--radius);
+  /* Fully rounded (a pill), unlike the diagonal-twist --radius used on
+     cards elsewhere -- deliberate contrast, same shape on every tab. */
+  border-radius: 999px;
   background: var(--color-surface);
   overflow-x: auto;
   /* The visible bordered bar spans the same full width as .tabs itself
