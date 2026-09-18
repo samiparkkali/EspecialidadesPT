@@ -62,3 +62,46 @@ def test_region_key_unknown_returns_none():
 
 def test_region_key_empty_returns_none():
     assert region_key("") is None
+
+
+def test_region_key_matches_island_abbreviations():
+    assert region_key("RAA") == "acores"
+    assert region_key("RAM") == "madeira"
+
+
+def test_region_key_matches_acores_without_cedilla():
+    assert region_key("Regiao Autonoma dos Acores") == "acores"
+
+
+def test_region_key_is_case_insensitive():
+    assert region_key("norte") == "norte"
+    assert region_key("ADMINISTRAÇÃO REGIONAL DE SAÚDE DO ALGARVE") == "algarve"
+
+
+def test_canonicalize_specialty_ignores_surrounding_whitespace():
+    assert canonicalize_specialty("  Oftalmologia  ") == "OFTALMOLOGIA"
+
+
+def test_canonicalize_specialty_empty_string():
+    assert canonicalize_specialty("") == ""
+
+
+def test_canonicalize_specialty_slash_and_comma_variants_match_same_canonical():
+    assert (
+        canonicalize_specialty("Ginecologia/obstetrícia")
+        == canonicalize_specialty("Ginecologia e Obstetrícia")
+    )
+    assert (
+        canonicalize_specialty("Cirurgia Plástica Reconstrutiva")
+        == canonicalize_specialty("Cirurgia Plástica, Reconstrutiva E Estética")
+    )
+
+
+def test_canonicalize_specialty_matching_is_case_insensitive():
+    assert canonicalize_specialty("ENDOCRINOLOGIA/NUTRIÇÃO") == canonicalize_specialty(
+        "Endocrinologia e Nutrição"
+    )
+
+
+def test_canonicalize_strips_whitespace_before_uppercasing():
+    assert canonicalize("  some clinic  ") == "SOME CLINIC"

@@ -127,14 +127,12 @@ function App() {
 
   return (
     <>
+      <LanguageToggle />
       <h1>{SITE_TITLE}</h1>
       <p className="subtitle">{t.app.subtitle}</p>
 
       <div className="tabs-sticky-region">
-      <div className="tab-bar-row">
-        <Tabs tabs={TABS} active={activeTab} onChange={setActiveTab} />
-        <LanguageToggle />
-      </div>
+      <Tabs tabs={TABS} active={activeTab} onChange={setActiveTab} />
       <div className="tour-row">
         <Tour activeTab={activeTab} onChangeTab={setActiveTab} />
       </div>

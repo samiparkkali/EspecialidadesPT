@@ -23,6 +23,16 @@
      either side of the centered pill still sit in front of (and steal
      clicks/taps from) whatever page content has scrolled under them. */
   pointer-events: none;
+  /* Full-bleed: break out of #root's centered max-width column so the bar
+     spans the whole viewport instead of stopping at the 1100px content
+     width, while .tabsInner stays centered within it via justify-content.
+     Margin-only (no left/right) so this doesn't fight the sticky/top
+     positioning above -- the percentage in each margin resolves against
+     the containing block's width, which cancels out #root's own padding
+     exactly, leaving a pure viewport-width shift either side. */
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
 }
 
 .tabsInner {
