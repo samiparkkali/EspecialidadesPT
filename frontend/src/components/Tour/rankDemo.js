@@ -32,7 +32,8 @@ export const demoAddPreference = () => {
   state.pendingClickTimer = window.setTimeout(() => {
     state.pendingClickTimer = null;
     const buttons = document.querySelectorAll('[data-tour="rank-browse"] button');
-    const match = Array.from(buttons).find((b) => b.textContent.includes(DEMO_SPECIALTY));
+    const target = DEMO_SPECIALTY.toLowerCase();
+    const match = Array.from(buttons).find((b) => b.textContent.toLowerCase().includes(target));
     if (match && !match.disabled) {
       match.click();
       state.preferenceAdded = true;
