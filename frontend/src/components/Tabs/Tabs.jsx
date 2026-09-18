@@ -28,7 +28,8 @@ const Tabs = ({ tabs, active, onChange }) => {
               className={active === tab.id ? styles.tabActive : styles.tab}
               onClick={() => onChange(tab.id)}
             >
-              {tab.label}
+              <span className={styles.labelFull}>{tab.label}</span>
+              <span className={styles.labelShort}>{tab.shortLabel || tab.label}</span>
             </button>
           ))}
         </div>

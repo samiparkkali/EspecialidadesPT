@@ -13,13 +13,6 @@ import Tour from './components/Tour/Tour';
 // Single source of truth for the site name -- mirrored to the tab title since index.html's <title> is static.
 const SITE_TITLE = 'Internato Impossible';
 
-const TABS = [
-  { id: 'overview', label: 'Overview' },
-  { id: 'this-year', label: "This Year's Seats" },
-  { id: 'specialty-stats', label: 'Specialty Statistics' },
-  { id: 'rank-preferences', label: 'Rank My Preferences' },
-];
-
 function App() {
   const { data: vagas, error: vagasError } = useDataset('vagas.json');
   const { data: colocados, error: colocadosError } = useDataset('colocados.json');
@@ -27,6 +20,24 @@ function App() {
   const [activeTab, setActiveTab] = useState('overview');
   const [specialty, setSpecialty] = useState('');
   const [institution, setInstitution] = useState('');
+
+  // Same "latest year with institution-level rows" logic ThisYear uses -- keeps
+  // the mobile tab label in sync with whatever year that view actually shows.
+  const latestYear = useMemo(() => {
+    if (!vagas) return null;
+    const years = vagas.filter((r) => r.institution).map((r) => Number(r.year));
+    return years.length ? Math.max(...years) : null;
+  }, [vagas]);
+
+  const TABS = useMemo(
+    () => [
+      { id: 'overview', label: 'Overview', shortLabel: 'Overview' },
+      { id: 'this-year', label: "This Year's Seats", shortLabel: latestYear ? `Year ${latestYear}` : 'This Year' },
+      { id: 'specialty-stats', label: 'Specialty Statistics', shortLabel: 'Statistics' },
+      { id: 'rank-preferences', label: 'Rank My Preferences', shortLabel: 'Ranking' },
+    ],
+    [latestYear]
+  );
 
   useEffect(() => {
     document.title = SITE_TITLE;

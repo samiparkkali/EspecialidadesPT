@@ -59,17 +59,17 @@ export const TOUR_STEPS = [
   },
   {
     tab: 'rank-preferences',
-    selector: '[data-tour="rank-list"]',
-    title: 'Watch it land in your scratchpad',
-    demo: demoAddPreference,
-    text: 'Clicking a combo (like the Cirurgia Geral one just filtered) adds it here immediately, as you can see. From here you can drag to reorder, use the arrows, or remove it: nothing is final.',
-  },
-  {
-    tab: 'rank-preferences',
     selector: '[data-tour="rank-number"]',
     title: 'Enter your Golden Ticket Number',
     demo: demoFillNumber,
     text: 'We filled in an example number, 1500, with a spread of +/-200. Your real ordering number plus how uncertain it might land drives the odds shown for every ranked option below.',
+  },
+  {
+    tab: 'rank-preferences',
+    selector: '[data-tour="rank-list"]',
+    title: 'Watch it land in your scratchpad',
+    demo: demoAddPreference,
+    text: 'Clicking a combo (like the Cirurgia Geral one just filtered) adds it here immediately, as you can see. From here you can drag to reorder, use the arrows, or remove it: nothing is final.',
   },
   {
     tab: 'rank-preferences',

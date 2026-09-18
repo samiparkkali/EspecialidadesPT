@@ -414,7 +414,7 @@ const RankMyPreferences = ({ vagas, colocados }) => {
         </div>
 
         <div className={styles.rankLayout}>
-          <div>
+          <div className={styles.browseSection}>
             <h3 className={styles.subheading}>
               Browse options ({filteredCombos.length})
             </h3>
@@ -489,8 +489,10 @@ const RankMyPreferences = ({ vagas, colocados }) => {
                 <p className="subtitle">No combos match the current filters.</p>
               )}
             </div>
+          </div>
 
-            <div className={styles.numberRow} data-tour="rank-number">
+          <div className={styles.numberSection} data-tour="rank-number">
+            <div className={styles.numberRow}>
               <label>
                 Your Golden Ticket Number
                 <input
@@ -523,7 +525,8 @@ const RankMyPreferences = ({ vagas, colocados }) => {
               </p>
             )}
           </div>
-          <div>
+
+          <div className={styles.scratchpadSection}>
             <h3 className={styles.subheading}>Your ranking ({preferences.length})</h3>
             <p className="subtitle" style={{ marginTop: 0 }}>
               Drag to reorder, or use the arrows. This is your working sketch: add, remove and reshuffle freely.
@@ -602,7 +605,7 @@ const RankMyPreferences = ({ vagas, colocados }) => {
                 );
               })}
               {preferences.length === 0 && (
-                <p className="subtitle">Nothing sketched yet. Click an option on the left to start.</p>
+                <p className="subtitle">Nothing sketched yet. Click an option above to start.</p>
               )}
             </ol>
           </div>

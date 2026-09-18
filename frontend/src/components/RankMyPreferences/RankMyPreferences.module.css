@@ -37,15 +37,26 @@
   margin: 0 0 0.5rem;
 }
 
+/* Single column always: browse, then the number box, then the ranking
+   scratchpad, then the likelihood panel (outside this grid) at the bottom.
+   Mobile reorders/hides via the media query below instead of duplicating markup. */
 .rankLayout {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 1.25rem;
 }
 
+/* Mobile has no room for the drag-to-reorder scratchpad alongside everything
+   else, and its own explicit odds already live in the likelihood panel below
+   -- so it's dropped there, and the number box moves to the very top since
+   it's needed before browsing makes sense (it's what the odds are based on). */
 @media (max-width: 640px) {
-  .rankLayout {
-    grid-template-columns: 1fr;
+  .numberSection {
+    order: -1;
+  }
+
+  .scratchpadSection {
+    display: none;
   }
 }
 

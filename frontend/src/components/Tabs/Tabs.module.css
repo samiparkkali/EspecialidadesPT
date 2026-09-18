@@ -1,6 +1,8 @@
 /* Sticky positioning needs a full-width block to pin against the viewport
    edge, so that outer layer stays borderless -- the visible border sits on
-   .tabsInner instead, hugging just the tab buttons rather than the full row. */
+   .tabsInner instead, hugging just the tab buttons rather than the full row.
+   The tour button (a plain flex sibling) is not sticky, so it just scrolls
+   away normally instead of floating. */
 .tabs {
   position: sticky;
   top: 0;
@@ -76,4 +78,48 @@
   bottom: 0.4rem;
   width: 1px;
   background: var(--color-border);
+}
+
+.labelShort {
+  display: none;
+}
+
+/* Small screens: shrink text/padding and swap to short labels so all 4 tabs
+   stay on one line instead of wrapping or needing a horizontal scroll. */
+@media (max-width: 560px) {
+  .tabsInner {
+    overflow-x: visible;
+    gap: 0.05rem;
+    width: 100%;
+  }
+
+  .tab,
+  .tabActive {
+    flex: 1;
+    text-align: center;
+    font-size: 0.85rem;
+    padding: 0.5rem 0.3rem;
+  }
+
+  .labelFull {
+    display: none;
+  }
+
+  .labelShort {
+    display: inline;
+  }
+}
+
+/* Very narrow phones need one more notch of shrinking to stay on one line. */
+@media (max-width: 340px) {
+  .tabsInner {
+    gap: 0;
+    padding: 0.35rem;
+  }
+
+  .tab,
+  .tabActive {
+    font-size: 0.74rem;
+    padding: 0.45rem 0.2rem;
+  }
 }
