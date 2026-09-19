@@ -71,6 +71,17 @@ h2 {
   margin-bottom: 1.5rem;
 }
 
+/* Justified text only reads cleanly once a line is long enough to avoid
+   noticeable gaps between words -- fine on desktop/laptop widths, but
+   narrow mobile columns wrapping every 3-4 words would look stretched and
+   uneven, so this stays above the same 640px breakpoint used elsewhere. */
+@media (min-width: 641px) {
+  .subtitle {
+    text-align: justify;
+    text-align-last: left;
+  }
+}
+
 .card {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
